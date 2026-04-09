@@ -6,8 +6,6 @@
 
 using IInteractable;
 
-Console.WriteLine("Hello, World!");
-
 Switch switch1 = new Switch();
 Key key1 = new Key();
 BlastDoor blastdoor = new BlastDoor(switch1, key1);
