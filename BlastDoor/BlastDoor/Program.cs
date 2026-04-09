@@ -3,8 +3,10 @@
  * Create three different classes (e.g., Switch, BlastDoor, Terminal) that all implement Door differently.
  * Create a list of these objects and loop through them, triggering their specific interactions.
  */
- 
- using IInteractable;
+
+using IInteractable;
+
+Console.WriteLine("Hello, World!");
 
 Switch switch1 = new Switch();
 Key key1 = new Key();
