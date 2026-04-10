@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenClosed_Principle", "OpenClosed_Principle\OpenClosed_Principle.csproj", "{FB57B03F-2353-4FEB-B982-76458ECEF6FD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB57B03F-2353-4FEB-B982-76458ECEF6FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB57B03F-2353-4FEB-B982-76458ECEF6FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB57B03F-2353-4FEB-B982-76458ECEF6FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB57B03F-2353-4FEB-B982-76458ECEF6FD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
