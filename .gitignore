@@ -1,6 +1,18 @@
-﻿bin/
-obj/
+﻿# --- JetBrains Rider ---
 .idea/
-.vs/
-*.user
-*.suo
+*.sln
+*.csproj
+*.unityproj
+
+# --- Unity ---
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
