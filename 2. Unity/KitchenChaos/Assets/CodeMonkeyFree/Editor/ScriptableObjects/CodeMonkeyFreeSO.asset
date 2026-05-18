@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.01
   subtype: kitchenchaos
-  lastShownTimestamp: 1778962152
+  lastShownTimestamp: 1779063503
   lastUpdateResponse:
     version: 1.01
     versionUrl: https://unitycodemonkey.com
-  checkedLastUpdateTimestamp: 1778962152
+  checkedLastUpdateTimestamp: 1779063503
   lastQOTDResponse:
     questionId: 302
     questionText: 'Is this valid code?
@@ -29,7 +29,7 @@ MonoBehaviour:
     answerC: 
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1778962152
+  lastQotdTimestamp: 1779063503
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/unityBundleMay26MustHave.png
     topText: The BEST Unity Bundle in ages! Includes my most recommended asset 94%
@@ -37,20 +37,19 @@ MonoBehaviour:
     topLink: assetstore
     bottomText: Get 98% OFF on awesome REALISTIC HumbleBundle!
     bottomLink: humblebundle
-  lastDynamicHeaderTimestamp: 1778962152
+  lastDynamicHeaderTimestamp: 1779063503
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freecourses">Check out all my FREE courses!
       Click here!</a>
-  websiteLatestMessageTimestamp: 1778962152
+  websiteLatestMessageTimestamp: 1779063503
   websiteLatestVideos:
     videos:
+    - youTubeId: JE8LhN-kBtY
+      title: Programming Basics (C# Tutorial for Beginners)
     - youTubeId: RXjO0W5iF_E
       title: TOP 10 FREE NEW Assets MAY 2026!
     - youTubeId: Fb5d_46JfVI
       title: What are Unity Templates?
     - youTubeId: pV-tmNmJFjY
       title: Unity's AI Tools are GENUINELY useful!
-    - youTubeId: _7ACFqhnxTw
-      title: FREE Game Dev Mechanic Challenges! Traffic System and Keypad Access
-        (Learn by DOING!)
-  websiteLatestVideosTimestamp: 1778962152
+  websiteLatestVideosTimestamp: 1779063503
