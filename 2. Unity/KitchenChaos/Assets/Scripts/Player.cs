@@ -10,15 +10,30 @@ public class Player : MonoBehaviour
     private bool isWalking;
     private void Update()
     {
+        HandleMovement();
+    }
+    
+    // used in PlayerAnimator.Update() to change animation state when player is idle/walking
+    public bool IsWalking()
+    {
+        return isWalking;
+    }
+    
+    private void HandleMovement()
+    {
+        // flattens the 2D input vector onto the 3D plane
         Vector2 inputVector = gameinput.GetMovementVectorNormalized();
-        
         Vector3 moveDir = new Vector3(inputVector.x, 0f, inputVector.y);
-
-        float moveDistance = moveSpeed * Time.deltaTime;
+        
+        // defines the dimensions of the player's surrounding for collision detection
         float playerRadius = .7f;
         float playerHeight = 2f;
+        float moveDistance = moveSpeed * Time.deltaTime;
+
+        // cast a capsule to project if the player will collide with an obstacle
         bool canMove = !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, moveDir, moveDistance);
 
+        // if direct movement is blocked, handle sliding by checking individuals axes independently
         if (!canMove)
         {
             // Attempt X
@@ -50,22 +65,17 @@ public class Player : MonoBehaviour
             }
         }
         
+        // execute movement is path is clear (direct or sliding)
         if (canMove)
         {
             transform.position += moveDir * moveDistance;
 
         }
 
+        // smoothly interpolate player's rotation to face direction of movement
         transform.forward = Vector3.Slerp(transform.forward, moveDir, Time.deltaTime * rotSpeed);
 
+        // evaluate movement state to change animation
         isWalking = moveDir != Vector3.zero;
-
-        
-        Debug.Log(inputVector);
-    }
-
-    public bool IsWalking()
-    {
-        return isWalking;
     }
 }
