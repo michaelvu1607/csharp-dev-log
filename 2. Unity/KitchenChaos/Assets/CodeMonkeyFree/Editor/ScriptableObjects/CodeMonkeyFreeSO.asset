@@ -14,22 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.01
   subtype: kitchenchaos
-  lastShownTimestamp: 1779063503
+  lastShownTimestamp: 1780033947
   lastUpdateResponse:
     version: 1.01
     versionUrl: https://unitycodemonkey.com
-  checkedLastUpdateTimestamp: 1779063503
+  checkedLastUpdateTimestamp: 1780033947
   lastQOTDResponse:
-    questionId: 302
-    questionText: 'Is this valid code?
+    questionId: 306
+    questionText: 'What is the value stored in percentage?
 
-      <p>Color? myColor = null;</p>'
-    answerA: Yes
-    answerB: No, myColor is a struct and cannot be null
-    answerC: 
+      <p>int health =
+      25;</p>
+
+      <p>int healthMax = 100;</p>
+
+      <p>float percentage = health
+      / healthMax;</p>'
+    answerA: 0.25f
+    answerB: 0
+    answerC: 2.5f
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1779063503
+  lastQotdTimestamp: 1780033947
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/unityBundleMay26MustHave.png
     topText: The BEST Unity Bundle in ages! Includes my most recommended asset 94%
@@ -37,19 +43,19 @@ MonoBehaviour:
     topLink: assetstore
     bottomText: Get 98% OFF on awesome REALISTIC HumbleBundle!
     bottomLink: humblebundle
-  lastDynamicHeaderTimestamp: 1779063503
+  lastDynamicHeaderTimestamp: 1780033947
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freecourses">Check out all my FREE courses!
       Click here!</a>
-  websiteLatestMessageTimestamp: 1779063503
+  websiteLatestMessageTimestamp: 1780033947
   websiteLatestVideos:
     videos:
-    - youTubeId: JE8LhN-kBtY
-      title: Programming Basics (C# Tutorial for Beginners)
-    - youTubeId: RXjO0W5iF_E
-      title: TOP 10 FREE NEW Assets MAY 2026!
-    - youTubeId: Fb5d_46JfVI
-      title: What are Unity Templates?
-    - youTubeId: pV-tmNmJFjY
-      title: Unity's AI Tools are GENUINELY useful!
-  websiteLatestVideosTimestamp: 1779063503
+    - youTubeId: -PPT43O48r4
+      title: The TERROR (and joy) of Pressing Publish on Steam!
+    - youTubeId: 3zUfuhJBl3c
+      title: First game made $1mil, second $0!
+    - youTubeId: R5LZ_dxi3Fc
+      title: Visual Studio Shortcuts (C# Tutorial for Beginners)
+    - youTubeId: LW1gycyV8VM
+      title: TOP 10 NEW Games, Made with Unity! (APRIL 2026)
+  websiteLatestVideosTimestamp: 1780033947

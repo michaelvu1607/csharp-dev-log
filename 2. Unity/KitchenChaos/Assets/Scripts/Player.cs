@@ -8,9 +8,11 @@ public class Player : MonoBehaviour
     [SerializeField] private GameInput gameinput;
 
     private bool isWalking;
+    private Vector3 lastInteractDir;
     private void Update()
     {
         HandleMovement();
+        HandleInteractions();
     }
     
     // used in PlayerAnimator.Update() to change animation state when player is idle/walking
@@ -18,7 +20,35 @@ public class Player : MonoBehaviour
     {
         return isWalking;
     }
-    
+
+    private void HandleInteractions()
+    {
+        // gets moveDir unaffected by blocked movement direction in HandleMovement()
+        Vector2 inputVector = gameinput.GetMovementVectorNormalized();
+        Vector3 moveDir = new Vector3(inputVector.x, 0f, inputVector.y);
+        
+        // gets direction player is facing
+        if (moveDir != Vector3.zero)
+        {
+            lastInteractDir = moveDir;
+        }
+
+        float interactDistance = 2f;
+
+        // checks for ClearCounter
+        if (Physics.Raycast(transform.position, lastInteractDir, out RaycastHit raycastHit, interactDistance))
+        {
+            if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+            {
+                // has ClearCounter
+                clearCounter.Interact();
+            }
+        }
+        else
+        {
+            Debug.Log("-");
+        }
+    }
     private void HandleMovement()
     {
         // flattens the 2D input vector onto the 3D plane
