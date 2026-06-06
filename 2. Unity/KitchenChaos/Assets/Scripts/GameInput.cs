@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 
 public class GameInput : MonoBehaviour
 {
+    // broadcast tower for when the Interact button is pressed
     public event EventHandler OnInteractAction;
     
     // generate c# class
@@ -17,11 +18,13 @@ public class GameInput : MonoBehaviour
         // activate the Player action map
         playerInputActions.Player.Enable();
         
+        // connecting local method to Unity's hardware listener
         playerInputActions.Player.Interact.performed += Interact_performed;
     }
 
     private void Interact_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        // event fired when Interact button is pressed
         OnInteractAction?.Invoke(this, EventArgs.Empty);
     }
     

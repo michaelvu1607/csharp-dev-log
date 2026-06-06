@@ -4,8 +4,10 @@ using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
+    // Singleton Pattern: allows visual scripts to find Player and subscribe to it
     public static Player Instance { get; private set; }
     
+    // broadcast tower for when Player's line of site changes
     public event EventHandler<OnSelectedCounterChangedEventArgs> OnSelectedCounterChanged;
 
     public class OnSelectedCounterChangedEventArgs : EventArgs
@@ -36,10 +38,12 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        gameinput.OnInteractAction += GameinputOnOnInteractAction;
+        // Player subscribes to GameInput's broadcast tower
+        gameinput.OnInteractAction += GameInputOnInteractAction;
     }
 
-    private void GameinputOnOnInteractAction(object sender, EventArgs e)
+    // executes immediately after Interact button is pressed
+    private void GameInputOnInteractAction(object sender, EventArgs e)
     {
         if (selectedCounter != null)
         {
@@ -73,12 +77,13 @@ public class Player : MonoBehaviour
 
         float interactDistance = 2f;
 
-        // checks for ClearCounter
+        // checks for objects in front of player
         if (Physics.Raycast(transform.position, lastInteractDir, out RaycastHit raycastHit, interactDistance, counterLayerMask))
         {
+            // checks if object is a ClearCounter (has ClearCounter script attached)
             if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
             {
-                // has ClearCounter
+                // checks to see which clearCounter Player is facing
                 if (clearCounter != selectedCounter)
                 {
                     SetSelectedCounter(clearCounter);
@@ -158,7 +163,10 @@ public class Player : MonoBehaviour
     
     private void SetSelectedCounter(ClearCounter selectedCounter)
     {
+        // sets the selectedCounter to another clearCounter or null
         this.selectedCounter = selectedCounter;
+        
+        // broadcasts the event to subscribers (SelectedCounterVisuals) with custom EventArgs
         OnSelectedCounterChanged?.Invoke(this, new OnSelectedCounterChangedEventArgs {selectedCounter = selectedCounter});
     }
 }
