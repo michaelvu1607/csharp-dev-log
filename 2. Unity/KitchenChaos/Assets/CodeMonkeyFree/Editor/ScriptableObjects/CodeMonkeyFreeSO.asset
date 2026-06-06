@@ -14,48 +14,45 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.01
   subtype: kitchenchaos
-  lastShownTimestamp: 1780033947
+  lastShownTimestamp: 1780624013
   lastUpdateResponse:
     version: 1.01
     versionUrl: https://unitycodemonkey.com
-  checkedLastUpdateTimestamp: 1780033947
+  checkedLastUpdateTimestamp: 1780624011
   lastQOTDResponse:
-    questionId: 306
-    questionText: 'What is the value stored in percentage?
+    questionId: 308
+    questionText: 'Is there a problem with this code?
 
-      <p>int health =
-      25;</p>
+      <p>private void SetCameraFollowFunc(Func&lt;Vector3&gt;
+      cameraFollowFunc) { }</p>
 
-      <p>int healthMax = 100;</p>
-
-      <p>float percentage = health
-      / healthMax;</p>'
-    answerA: 0.25f
-    answerB: 0
-    answerC: 2.5f
+      <p>SetCameraFollowFunc(() =&gt; new Vector3(1,
+      0, 0));</p>'
+    answerA: No
+    answerB: 'Should be: SetCameraFollowFunc(() =&#62; return new Vector3(1, 0, 0));'
+    answerC: 'Should be: SetCameraFollowFunc((Vector3(1, 0, 0)) =&#62; { });'
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1780033947
+  lastQotdTimestamp: 1780624011
   lastDynamicHeaderResponse:
-    topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/unityBundleMay26MustHave.png
-    topText: The BEST Unity Bundle in ages! Includes my most recommended asset 94%
-      OFF!
-    topLink: assetstore
-    bottomText: Get 98% OFF on awesome REALISTIC HumbleBundle!
-    bottomLink: humblebundle
-  lastDynamicHeaderTimestamp: 1780033947
+    topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/humbleJun26Synty.png
+    topText: Synty is BACK with a HumbleBundle 95% OFF! Don't miss this one!
+    topLink: humblebundle
+    bottomText: My 10+ Years of C# Knowledge in 1 Course!
+    bottomLink: csharpcourse
+  lastDynamicHeaderTimestamp: 1780624011
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freecourses">Check out all my FREE courses!
       Click here!</a>
-  websiteLatestMessageTimestamp: 1780033947
+  websiteLatestMessageTimestamp: 1780624011
   websiteLatestVideos:
     videos:
+    - youTubeId: 7s7rmNeo8Wo
+      title: Getting Started with Unity AI!
+    - youTubeId: PrTIDnZIlDM
+      title: What are Variables? (C# Basics for Beginners)
     - youTubeId: -PPT43O48r4
       title: The TERROR (and joy) of Pressing Publish on Steam!
     - youTubeId: 3zUfuhJBl3c
       title: First game made $1mil, second $0!
-    - youTubeId: R5LZ_dxi3Fc
-      title: Visual Studio Shortcuts (C# Tutorial for Beginners)
-    - youTubeId: LW1gycyV8VM
-      title: TOP 10 NEW Games, Made with Unity! (APRIL 2026)
-  websiteLatestVideosTimestamp: 1780033947
+  websiteLatestVideosTimestamp: 1780624011

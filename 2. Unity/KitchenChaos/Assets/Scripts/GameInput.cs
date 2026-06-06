@@ -1,8 +1,11 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class GameInput : MonoBehaviour
 {
+    public event EventHandler OnInteractAction;
+    
     // generate c# class
     private PlayerInputActions playerInputActions;
         
@@ -13,6 +16,13 @@ public class GameInput : MonoBehaviour
         
         // activate the Player action map
         playerInputActions.Player.Enable();
+        
+        playerInputActions.Player.Interact.performed += Interact_performed;
+    }
+
+    private void Interact_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnInteractAction?.Invoke(this, EventArgs.Empty);
     }
     
     // reads and returns player movement vector as a normalized direction vector
