@@ -435,11 +435,38 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4789471577717848875, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+      propertyPath: cheesePrefab
+      value: 
+      objectReference: {fileID: 5286012539236276827, guid: 9f9cb1ef0df90664fa64454eac65f5e2, type: 3}
+    - target: {fileID: 4789471577717848875, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+      propertyPath: tomatoPrefab
+      value: 
+      objectReference: {fileID: 3812876574508226176, guid: 44325c67017631342b5f02792113e57b, type: 3}
+    - target: {fileID: 4789471577717848875, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+      propertyPath: kitchenObjectSO
+      value: 
+      objectReference: {fileID: 11400000, guid: 7fc78e2bcf714d948ac45da8a5a25222, type: 2}
+    - target: {fileID: 4789471577717848875, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+      propertyPath: secondClearCounter
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+--- !u!114 &777277435 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4789471577717848875, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+  m_PrefabInstance: {fileID: 737276596}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02cfd40ac9bd9384298073562c45d335, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ClearCounter
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -858,6 +885,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4789471577717848875, guid: c07e269e404344f46958e6ee33bb1d89, type: 3}
+      propertyPath: secondClearCounter
+      value: 
+      objectReference: {fileID: 777277435}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IKitchenObjectParent
 {
     // Singleton Pattern: allows visual scripts to find Player and subscribe to it
     public static Player Instance { get; private set; }
@@ -19,10 +19,12 @@ public class Player : MonoBehaviour
     [SerializeField] private float rotSpeed = 15f;
     [SerializeField] private GameInput gameinput;
     [SerializeField] private LayerMask counterLayerMask;
+    [SerializeField] private Transform kitchenObjectHoldPoint;
 
     private bool isWalking;
     private Vector3 lastInteractDir;
     private ClearCounter selectedCounter;
+    private KitchenObject kitchenObject;
 
     private void Awake()
     {
@@ -47,7 +49,7 @@ public class Player : MonoBehaviour
     {
         if (selectedCounter != null)
         {
-            selectedCounter.Interact();
+            selectedCounter.Interact(this);
         }
     }
 
@@ -99,7 +101,6 @@ public class Player : MonoBehaviour
             SetSelectedCounter(null);
         }
         
-        Debug.Log(selectedCounter);
     }
     private void HandleMovement()
     {
@@ -168,5 +169,34 @@ public class Player : MonoBehaviour
         
         // broadcasts the event to subscribers (SelectedCounterVisuals) with custom EventArgs
         OnSelectedCounterChanged?.Invoke(this, new OnSelectedCounterChangedEventArgs {selectedCounter = selectedCounter});
+    }
+
+    public Transform GetKitchenObjectFollowTransform()
+    {
+        return kitchenObjectHoldPoint;
+    }
+
+    // public setter: item assignment in counter
+    public void SetKitchenObject(KitchenObject kitchenObject)
+    {
+        this.kitchenObject = kitchenObject;
+    }
+    
+    // checks which item the counter currently holds
+    public KitchenObject GetKitchenObject()
+    {
+        return kitchenObject;
+    }
+
+    // clears counter
+    public void ClearKitchenObject()
+    {
+        kitchenObject = null;
+    }
+
+    // helper function returning a boolean to check whether a counter is currently occupied
+    public bool HasKitchenObject()
+    {
+        return kitchenObject != null;
     }
 }
