@@ -4,10 +4,10 @@ using UnityEngine;
 public class SelectedCounterVisual : MonoBehaviour
 {
     // specific counter this script is attached to
-    [SerializeField] private ClearCounter clearCounter;
+    [SerializeField] private BaseCounter baseCounter;
     
     // visual mesh turned on and off
-    [SerializeField] private GameObject visualGameObject;
+    [SerializeField] private GameObject[] visualGameObjectArray;
     private void Start()
     {
         // uses Singleton to find Player and then subscribes
@@ -18,7 +18,7 @@ public class SelectedCounterVisual : MonoBehaviour
     private void Player_OnSelectedCounterChanged(object sender, Player.OnSelectedCounterChangedEventArgs e)
     {
         // checks if counter Player is looking at matches this counter
-        if (e.selectedCounter == clearCounter)
+        if (e.selectedCounter == baseCounter)
         {
             Show();
         }
@@ -30,10 +30,12 @@ public class SelectedCounterVisual : MonoBehaviour
 
     private void Show()
     {
-        visualGameObject.SetActive(true);
+        foreach (GameObject go in visualGameObjectArray)
+            go.SetActive(true);
     }
     private void Hide()
     {
-        visualGameObject.SetActive(false);
+        foreach (GameObject go in visualGameObjectArray)
+            go.SetActive(false);
     }
 }

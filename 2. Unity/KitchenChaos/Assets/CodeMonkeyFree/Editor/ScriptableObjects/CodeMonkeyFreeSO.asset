@@ -14,40 +14,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.01
   subtype: kitchenchaos
-  lastShownTimestamp: 1780760294
+  lastShownTimestamp: 1780940870
   lastUpdateResponse:
     version: 1.01
     versionUrl: https://unitycodemonkey.com
-  checkedLastUpdateTimestamp: 1780760294
+  checkedLastUpdateTimestamp: 1780940870
   lastQOTDResponse:
-    questionId: 309
-    questionText: If you add the attribute [ExecuteInEditMode] to a MonoBehaviour
-      class, how often will Update be called?
-    answerA: Refresh rate of the monitor
-    answerB: When modifying something
-    answerC: Framerate shown in Game - Stats window
-    answerD: 
+    questionId: 310
+    questionText: How should you store the health of each unit in your game?
+    answerA: public int health;
+    answerB: private int health;
+    answerC: public static int health;
+    answerD: private int h;
     answerE: 
-  lastQotdTimestamp: 1780760294
+  lastQotdTimestamp: 1780940870
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/humbleJun26Synty.png
     topText: Synty is BACK with a HumbleBundle 95% OFF! Don't miss this one!
     topLink: humblebundle
     bottomText: My 10+ Years of C# Knowledge in 1 Course!
     bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1780760294
+  lastDynamicHeaderTimestamp: 1780940870
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freecourses">Check out all my FREE courses!
       Click here!</a>
-  websiteLatestMessageTimestamp: 1780760294
+  websiteLatestMessageTimestamp: 1780940870
   websiteLatestVideos:
     videos:
+    - youTubeId: m0s3IUrWzVQ
+      title: How to Write High Quality Code that doesn't fall apart.
+    - youTubeId: NZfIxeK463o
+      title: Steam update just DESTROYED indie devs?!
     - youTubeId: AuT-paQSAHU
       title: NEW HOTTEST Steam Game Genres Revealed!
     - youTubeId: 7s7rmNeo8Wo
       title: Getting Started with Unity AI!
-    - youTubeId: PrTIDnZIlDM
-      title: What are Variables? (C# Basics for Beginners)
-    - youTubeId: -PPT43O48r4
-      title: The TERROR (and joy) of Pressing Publish on Steam!
-  websiteLatestVideosTimestamp: 1780760294
+  websiteLatestVideosTimestamp: 1780940870
