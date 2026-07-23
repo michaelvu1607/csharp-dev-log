@@ -24,6 +24,18 @@ public class NiryoStatePublisher : MonoBehaviour
     // opens a network port to Linux container; automatically converts Unity's 3D data to Linux's binary & vice versa
     private ROSConnection m_Ros;
 
+    public ArticulationBody[] JointArticulationBodies => m_JointArticulationBodies;
+
+    // Inside NiryoStatePublisher.cs:
+    public static readonly string[] LinkNames = {
+        "world/base_link/shoulder_link",
+        "/arm_link",
+        "/elbow_link",
+        "/forearm_link",
+        "/wrist_link",
+        "/hand_link"
+    };
+
     private void Start()
     {
         // automatically locates the ROS Connection component in scene
