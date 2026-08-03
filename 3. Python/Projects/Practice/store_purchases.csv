@@ -1,0 +1,41 @@
+purchase_id,player_id,item_type,amount_usd
+TX_0001,P_003,Battle Pass,0.99
+TX_0002,P_016,Cosmetic,0.99
+TX_0003,P_011,XP Boost,0.99
+TX_0004,P_012,Battle Pass,9.99
+TX_0005,P_010,Cosmetic,9.99
+TX_0006,P_016,XP Boost,0.99
+TX_0007,P_008,Battle Pass,0.99
+TX_0008,P_006,Battle Pass,0.99
+TX_0009,P_012,Cosmetic,4.99
+TX_0010,P_008,Cosmetic,4.99
+TX_0011,P_004,Cosmetic,9.99
+TX_0012,P_008,XP Boost,0.99
+TX_0013,P_018,Cosmetic,9.99
+TX_0014,P_005,Battle Pass,19.99
+TX_0015,P_009,Battle Pass,0.99
+TX_0016,P_004,Cosmetic,9.99
+TX_0017,P_017,Cosmetic,4.99
+TX_0018,P_009,Starter Pack,4.99
+TX_0019,P_001,Battle Pass,4.99
+TX_0020,P_020,XP Boost,9.99
+TX_0021,P_013,Starter Pack,4.99
+TX_0022,P_016,Cosmetic,9.99
+TX_0023,P_013,Cosmetic,19.99
+TX_0024,P_014,Battle Pass,4.99
+TX_0025,P_003,Cosmetic,19.99
+TX_0026,P_006,XP Boost,4.99
+TX_0027,P_018,Battle Pass,4.99
+TX_0028,P_019,Cosmetic,4.99
+TX_0029,P_005,Battle Pass,0.99
+TX_0030,P_015,Cosmetic,9.99
+TX_0031,P_002,Cosmetic,4.99
+TX_0032,P_010,Cosmetic,4.99
+TX_0033,P_018,XP Boost,19.99
+TX_0034,P_013,XP Boost,0.99
+TX_0035,P_005,Battle Pass,4.99
+TX_0036,P_001,Cosmetic,4.99
+TX_0037,P_001,Cosmetic,9.99
+TX_0038,P_018,XP Boost,4.99
+TX_0039,P_015,Cosmetic,9.99
+TX_0040,P_017,XP Boost,9.99
