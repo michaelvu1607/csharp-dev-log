@@ -41,7 +41,7 @@ CREATE TABLE weather_forecasts (
     weather_id INTEGER PRIMARY KEY,
     destination_id TEXT NOT NULL,
     month INTEGER NOT NULL,
-    avg_temp_f REAL NOT NULL,
+    avg_temp_c REAL NOT NULL,
     rainy_days INTEGER,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
 );

@@ -15,7 +15,13 @@
         <tools />
         <mcp-servers />
       </assistant-state>
-      <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
+      <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="848902938C6D46D48B2C075C7D5CC2AF" availability="AVAILABLE" acknowledgement="ENGAGED" selected="true">
+        <chats>
+          <chat id="848902938C6D46D48B2C075C7D5CC2AF" title="" session-signature="" timestamp="1785822964696">
+            <messages />
+            <context mode="DEVELOPMENT" provider="" profile="" model="" action="" interactive="true" />
+          </chat>
+        </chats>
         <tools />
         <mcp-servers />
       </assistant-state>
@@ -33,14 +39,19 @@
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="2a69e479-5a8a-455f-9a8a-c63e78a3797f">
       <console name="Connection" type="STANDARD" schema="" session="Main" />
-      <console name="Trips DB" type="STANDARD" schema="" session="Main" />
+      <console name="Trips DB" type="STANDARD" schema="main" session="Main"><![CDATA[SELECT * FROM destinations;
+SELECT * FROM flights;
+SELECT * FROM accommodations;
+SELECT * FROM weather_forecasts;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" object-ref="consoles/Trips DB" />
+    </open-files>
   </component>
   <component name="DBNavigator.Project.DatabasePrerequisiteManager">
     <prerequisites />
@@ -50,6 +61,9 @@
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
     <filter-actions connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" dataset="main.accommodations" active-filter-id="" />
+  </component>
+  <component name="DBNavigator.Project.ExecutionManager">
+    <retain-sticky-names value="false" />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />
