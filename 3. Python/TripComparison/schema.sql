@@ -1,9 +1,10 @@
-PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS weather_forecasts;
 DROP TABLE IF EXISTS accommodations;
 DROP TABLE IF EXISTS flights;
 DROP TABLE IF EXISTS destinations;
+
+PRAGMA foreign_keys = ON;
 
 CREATE TABLE destinations (
     destination_id TEXT PRIMARY KEY,
@@ -18,9 +19,10 @@ CREATE TABLE flights (
     flight_id TEXT PRIMARY KEY,
     origin_code TEXT NOT NULL,
     destination_id TEXT NOT NULL,
+    departure_date TEXT,
+    return_date TEXT,
     price_usd REAL NOT NULL,
     duration_hours REAL NOT NULL,
-    stops INTEGER DEFAULT 0,
     airline TEXT,
     fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
@@ -37,11 +39,12 @@ CREATE TABLE accommodations (
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
 );
 
+
 CREATE TABLE weather_forecasts (
     weather_id INTEGER PRIMARY KEY,
     destination_id TEXT NOT NULL,
-    month INTEGER NOT NULL,
+    forecast_date TEXT NOT NULL,
     avg_temp_c REAL NOT NULL,
-    rainy_days INTEGER,
+    precipitation_mm REAL,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
 );

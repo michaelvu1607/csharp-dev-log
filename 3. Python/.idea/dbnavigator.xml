@@ -6,15 +6,11 @@
   </component>
   <component name="DBNavigator.Project.DataEditorManager">
     <record-view-column-sorting-type value="BY_INDEX" />
-    <value-preview-text-wrapping value="true" />
+    <value-preview-text-wrapping value="false" />
     <value-preview-pinned value="false" />
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
     <assistants>
-      <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
-        <tools />
-        <mcp-servers />
-      </assistant-state>
       <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="848902938C6D46D48B2C075C7D5CC2AF" availability="AVAILABLE" acknowledgement="ENGAGED" selected="true">
         <chats>
           <chat id="848902938C6D46D48B2C075C7D5CC2AF" title="" session-signature="" timestamp="1785822964696">
@@ -22,6 +18,10 @@
             <context mode="DEVELOPMENT" provider="" profile="" model="" action="" interactive="true" />
           </chat>
         </chats>
+        <tools />
+        <mcp-servers />
+      </assistant-state>
+      <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
         <tools />
         <mcp-servers />
       </assistant-state>
@@ -64,6 +64,9 @@ SELECT * FROM weather_forecasts;]]></console>
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />
+  </component>
+  <component name="DBNavigator.Project.FileConnectionMappingManager">
+    <mapping file-url="file://$PROJECT_DIR$/TripComparison/schema.sql" connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" session-id="MAIN" current-schema="main" />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />
