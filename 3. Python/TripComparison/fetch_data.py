@@ -2,14 +2,24 @@ import sqlite3
 import requests
 from bs4 import BeautifulSoup
 
-url = "https://api.open-meteo.com/v1/forecast?latitude=35.6895&longitude=139.6917&daily=temperature_2m_max,precipitation_sum,weather_code"
-response = requests.get(url)
-print(f"Status Code: {response.status_code}")
+url = "https://api.open-meteo.com/v1/forecast"
+params = {
+      "latitude": 35.6895,
+      "longitude": 139.687,
+      "daily": "temperature_2m_max,precipitation_sum",
+      "forecast_days": 14
+  }
 
 try:
+    response = requests.get(url, params=params)
+    response.raise_for_status()
     data = response.json()['daily']
-    print(data)
+except requests.exceptions.Timeout:
+    print("Request timed out")
+except requests.exceptions.RequestException as e:
+    print("Request failed:", e)
 
+try:
     destination_id = "TYO"
     forecast_date = data['time']
     temp_c = data['temperature_2m_max']

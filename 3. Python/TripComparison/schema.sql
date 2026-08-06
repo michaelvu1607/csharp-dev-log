@@ -1,8 +1,8 @@
-
 DROP TABLE IF EXISTS weather_forecasts;
 DROP TABLE IF EXISTS accommodations;
 DROP TABLE IF EXISTS flights;
 DROP TABLE IF EXISTS destinations;
+DROP TABLE IF EXISTS climates;
 
 PRAGMA foreign_keys = ON;
 
@@ -47,4 +47,12 @@ CREATE TABLE weather_forecasts (
     avg_temp_c REAL NOT NULL,
     precipitation_mm REAL,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
+);
+
+CREATE TABLE climates (
+    destination_id TEXT,
+    month INTEGER,
+    avg_temp_c REAL,
+    avg_rainfall_mm REAL,
+    FOREIGN KEY (destination_id) REFERENCES destinations (destination_id)
 );
