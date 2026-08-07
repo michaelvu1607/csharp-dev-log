@@ -10,11 +10,13 @@ CREATE TABLE destinations (
     destination_id TEXT PRIMARY KEY,
     city_name TEXT NOT NULL,
     country TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    airport_code TEXT,
     climate_zone TEXT,
-    avg_daily_cost_usd REAL NOT NULL,
+    avg_daily_cost_usd REAL,
     vibe_tags TEXT
 );
-
 CREATE TABLE flights (
     flight_id TEXT PRIMARY KEY,
     origin_code TEXT NOT NULL,
@@ -45,6 +47,7 @@ CREATE TABLE weather_forecasts (
     destination_id TEXT NOT NULL,
     forecast_date TEXT NOT NULL,
     avg_temp_c REAL NOT NULL,
+    weather_code INTEGER,
     precipitation_mm REAL,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
 );
