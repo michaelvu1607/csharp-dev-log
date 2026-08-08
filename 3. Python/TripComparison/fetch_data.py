@@ -1,7 +1,27 @@
 import sqlite3
 import requests
 from bs4 import BeautifulSoup
+from duffel_api import Duffel
+import os
+from dotenv import load_dotenv
+import math
+import airportsdata
 
+load_dotenv()
+DUFFEL_TOKEN = os.getenv("DUFFEL_API_KEY")
+
+client = Duffel(access_token=DUFFEL_TOKEN)
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    distance = math.hypot(lat1 - lat2, lon1 - lon2)
+    return distance
+
+def get_nearest_airport(userlat, userlon):
+    airports = airportsdata.load('IATA')
+    closest = min(airports.values(), key=lambda coords: calculate_distance(userlat, userlon, coords['lat'], coords['lon']))
+    return closest
+
+# searches for location if not already in database
 def geocode_city(city_name: str):
     url = "https://geocoding-api.open-meteo.com/v1/search"
     params = {"name": city_name}
@@ -16,7 +36,6 @@ def geocode_city(city_name: str):
 
         result = data["results"][0]
 
-        # Format clean IDs (e.g. "ann_arbor_united_states")
         clean_city = result["name"].lower().replace(" ", "_")
         clean_country = (
             result.get("country", "unknown").lower().replace(" ", "_")
@@ -39,75 +58,179 @@ def geocode_city(city_name: str):
         print(f"Error reaching Geocoding API: {e}")
         return None
 
-def fetch_destination_data(city_name):
-   with sqlite3.connect('trips.db') as connection:
-       cursor = connection.cursor()
-       cursor.execute(
-           "SELECT * FROM destinations WHERE city_name LIKE ?", (f"%{city_name}%",)
-       )
+def get_destination_data(city_name, user_location):
+    with sqlite3.connect('trips.db') as connection:
+        cursor = connection.cursor()
 
-       match = cursor.fetchone()
+        # searches through database to find location
+        cursor.execute(
+            "SELECT * FROM destinations WHERE city_name LIKE ?", (f"%{city_name}%",)
+        )
 
-       if match:
-           (destination_id,
-           city_name,
-           country,
-           latitude,
-           longitude,
-           airport_code,
-           climate_zone,
-           avg_daily_cost_usd,
-           vibe_tags) = match
-           print(f"Found {city_name}, {country} | Avg. Cost: {avg_daily_cost_usd} per day")
-           print(f"Coordinates: {latitude}, {longitude} | Main Airport: {airport_code}")
-           print(f"Climate: {climate_zone} | Vibes: {vibe_tags}")
-           print("Location found!")
+        match = cursor.fetchone()
 
-           geo_data = {
-               "destination_id": destination_id,
-               "latitude": latitude,
-               "longitude": longitude,
-               "city_name": city_name,
-           }
+        # set variables equal to the match
+        if match:
+            (destination_id,
+            city_name,
+            country,
+            latitude,
+            longitude,
+            airport_code,
+            climate_zone,
+            avg_daily_cost_usd,
+            vibe_tags) = match
 
-           fetch_weather_data(geo_data, connection)
-           return match
+            print("Location found!")
 
-       geo_data = geocode_city(city_name)
+            # update data
+            geo_data = {
+                "destination_id": destination_id,
+                "latitude": latitude,
+                "longitude": longitude,
+                "city_name": city_name,
+            }
 
-       print(f"'{city_name}' not in cache. Fetching location via Geocoding API")
-       if not geo_data:
-           print(f"Could not find {city_name}")
-           return None
+            get_weather_data(geo_data, connection)
 
-       cursor.execute("""
-       INSERT OR REPLACE INTO destinations
-       (destination_id, city_name, country, latitude, longitude, airport_code, climate_zone, avg_daily_cost_usd, vibe_tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       """, (
-           geo_data["destination_id"],
-           geo_data["city_name"],
-           geo_data["country"],
-           geo_data["latitude"],
-           geo_data["longitude"],
-           geo_data["airport_code"],
-           geo_data["climate_zone"],
-           geo_data["avg_daily_cost_usd"],
-           geo_data["vibe_tags"]
-       ))
+            get_flight_data(user_location, geo_data)
+            return match
 
-       print(f"Found {geo_data["city_name"].replace("_"," ").title()}, {geo_data["country"].replace("_"," ").title()}")
+        # location not found in database -> use geocode_city to search using API
+        geo_data = geocode_city(city_name)
 
-       fetch_weather_data(geo_data, connection)
+        print(f"'{city_name}' not in cache. Fetching location via Geocoding API")
+        if not geo_data:
+            print(f"Could not find {city_name}")
+            return None
 
-       cursor.execute(
-           "SELECT * FROM destinations WHERE destination_id = ?",
-           (geo_data["destination_id"],)
-       )
-       new_match = cursor.fetchone()
-       return new_match
+        # update database with new location
+        cursor.execute("""
+        INSERT OR REPLACE INTO destinations
+        (destination_id, city_name, country, latitude, longitude, airport_code, climate_zone, avg_daily_cost_usd, vibe_tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            geo_data["destination_id"],
+            geo_data["city_name"],
+            geo_data["country"],
+            geo_data["latitude"],
+            geo_data["longitude"],
+            geo_data["airport_code"],
+            geo_data["climate_zone"],
+            geo_data["avg_daily_cost_usd"],
+            geo_data["vibe_tags"]
+        ))
 
-def fetch_weather_data(geo_data, connection):
+        print(f"Found {geo_data["city_name"].replace("_"," ").title()}, {geo_data["country"].replace("_"," ").title()}")
+
+        get_flight_data(user_location, geo_data)
+        get_weather_data(geo_data, connection)
+
+        # return the new location now saved in the database
+        cursor.execute(
+            "SELECT * FROM destinations WHERE destination_id = ?",
+            (geo_data["destination_id"],)
+        )
+        new_match = cursor.fetchone()
+        return new_match
+
+# prints top one way flight options
+def search_one_way_flights(origin_iata, destination_iata, departure_date, cabin_class, adults=1, return_date=None):
+    print(f"Searching flights from {origin_iata} to {destination_iata} on {departure_date}")
+
+    url = "https://api.duffel.com/air/offer_requests?return_offers=true"
+
+    headers = {
+        "Authorization": f"Bearer {DUFFEL_TOKEN}",
+        "Duffel-Version": "v2",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+    slices = [{
+        "origin": origin_iata,
+        "destination": destination_iata,
+        "departure_date": departure_date
+    }]
+
+    if return_date:
+        slices.append({
+        "origin": destination_iata,
+        "destination": origin_iata,
+        "departure_date": return_date
+    })
+
+    payload = {
+        "data":
+            {
+        "slices": slices,
+        "passengers": [{"type": "adult"} for _ in range(adults)],
+        "cabin_class": cabin_class
+            }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    data = response.json()
+
+    if response.status_code not in (200, 201):
+        print("Error from Duffel API:")
+        return
+
+    offers = data.get("data", {}).get("offers", [])
+    print(f"Found {len(offers)} flight options\n")
+
+    for idx, offer in enumerate(offers[:5], start=1):
+        amount = offer.get("total_amount")
+        currency = offer.get("total_currency")
+        airline_name = offer.get("owner", {}).get("name")
+
+        first_segment = offer["slices"][0]["segments"][-1]
+        dep_time = first_segment.get("departing_at")
+        arr_time = first_segment.get("arriving_at")
+
+        print(f"Option #{idx}: {airline_name}")
+        print(f"  Price: {amount} {currency} for {adults} adult passengers")
+        print(f"  Departs: {dep_time}")
+        print(f"  Arrives: {arr_time}")
+        print("-" * 40)
+
+def get_flight_data(user_location, geo_data_destination):
+    # user location info
+    geo_data_user_location = geocode_city(user_location)
+    user_location_id = geo_data_user_location['destination_id']
+    print(f"Found {user_location_id}")
+
+    user_lat = geo_data_user_location['latitude']
+    user_lon = geo_data_user_location['longitude']
+
+    user_nearest_airport = get_nearest_airport(user_lat, user_lon)
+    if user_nearest_airport is None:
+        print(f"{user_location} not found")
+        return None
+    print(f"User nearest airport: {user_nearest_airport}")
+
+    user_origin_code_iata = user_nearest_airport.get("iata")
+
+    # destination location info
+    destination_lat = geo_data_destination['latitude']
+    destination_lon = geo_data_destination['longitude']
+
+    destination_nearest_airport = get_nearest_airport(destination_lat, destination_lon)
+    print(f"Destination nearest airport: {destination_nearest_airport}")
+
+    destination_origin_code_iata = destination_nearest_airport.get("iata")
+    departure_date = input("Enter a departure date [YYYY-MM-DD]:" )
+    cabin_class = input("Enter a cabin class [economy, premium_economy, business, first]: ")
+    num_adults = int(input("Enter the number of adults boarding: "))
+    round_trip = input("Are you planning on returning? [y/n]: ")
+    if round_trip == "y":
+        return_date = input("Enter a return date [YYYY-MM-DD]:")
+    elif round_trip == "n":
+        return_date = None
+    search_one_way_flights(user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, num_adults, return_date)
+
+# adds forecast of the next 2 weeks to the database
+def get_weather_data(geo_data, connection):
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
           "latitude": geo_data["latitude"],
@@ -132,10 +255,11 @@ def fetch_weather_data(geo_data, connection):
         forecast_date = data['time']
         temp_c = data['temperature_2m_max']
         precipitation_sum = data['precipitation_sum']
-        weather_code = data.get("weather_code")
+        weather_code = data["weather_code"]
 
         cursor = connection.cursor()
 
+        # add forecast information to database
         for i in range(len(forecast_date)):
             cursor.execute("""
             INSERT OR REPLACE INTO weather_forecasts
@@ -148,10 +272,11 @@ def fetch_weather_data(geo_data, connection):
 
 def search():
     while True:
-        city = input("Enter a city: ")
-        fetch_destination_data(city)
-        if city == "":
-            break
+        user_location = input("Enter your location: ")
 
+        destination_city = input("Enter your destination: ")
+        if destination_city == "0":
+            break
+        get_destination_data(destination_city, user_location)
 if __name__ == "__main__":
     search()

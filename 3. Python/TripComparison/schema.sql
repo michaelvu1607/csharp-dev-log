@@ -26,6 +26,7 @@ CREATE TABLE flights (
     price_usd REAL NOT NULL,
     duration_hours REAL NOT NULL,
     airline TEXT,
+    segments INTEGER NOT NULL DEFAULT 1,
     fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
 );
