@@ -60,8 +60,8 @@ def get_nearest_airport(userlat, userlon):
     closest = min(commercial_airports, key=lambda coords: calculate_distance(userlat, userlon, coords['lat'], coords['lon']))
     return closest
 
+# Returns an IATA Metro Code if the city is a known multi-airport region, otherwise calculates the nearest commercial airport code spatially.
 def resolve_location_to_iata(geo_data: dict) -> str:
-    # Returns an IATA Metro Code if the city is a known multi-airport region, otherwise calculates the nearest commercial airport code spatially.
     clean_city = geo_data["city_name"].lower().replace(" ", "_")
 
     # check if the city has a designated metro code
@@ -151,7 +151,7 @@ def get_destination_data(city_name, user_location):
 
             get_weather_data(geo_data, connection)
 
-            get_flight_data(user_location, geo_data)
+            get_flight_data(user_location, geo_data, connection)
             return match
 
         # location not found in database -> use geocode_city to search using API
@@ -181,7 +181,7 @@ def get_destination_data(city_name, user_location):
 
         print(f"Found {geo_data["city_name"].replace("_"," ").title()}, {geo_data["country"].replace("_"," ").title()}")
 
-        get_flight_data(user_location, geo_data)
+        get_flight_data(user_location, geo_data, connection)
         get_weather_data(geo_data, connection)
 
         # return the new location now saved in the database
@@ -193,7 +193,7 @@ def get_destination_data(city_name, user_location):
         return new_match
 
 # prints top one way flight options
-def search_one_way_flights(origin_iata, destination_iata, departure_date, cabin_class, adults=1, return_date=None):
+def search_flights(origin_iata, destination_iata, departure_date, cabin_class, connection, adults=1, return_date=None):
     print(f"Searching flights from {origin_iata} to {destination_iata} on {departure_date}")
 
     url = "https://api.duffel.com/air/offer_requests?return_offers=true"
@@ -244,6 +244,8 @@ def search_one_way_flights(origin_iata, destination_iata, departure_date, cabin_
 
         print(f"Option #{idx}: {airline_name} — Total: {amount} {currency} ({adults} adult(s))")
 
+        cursor = connection.cursor()
+
         for s_idx, flight_slice in enumerate(offer["slices"], start=1):
             segments = flight_slice["segments"]
             dep_time = segments[0].get("departing_at")
@@ -258,13 +260,21 @@ def search_one_way_flights(origin_iata, destination_iata, departure_date, cabin_
             orig_code = location.get("iata_code") or location.get("iata") or "N/A"
             dest_code = destination.get("iata_code") or destination.get("iata") or "N/A"
 
-            print(f"  [{label} - {layover_type}] {orig_code} ➔ {dest_code}")
+            print(f"  {label} - {layover_type} | {orig_code} ➔ {dest_code}")
 
             print(f"    Departs: {dep_time}")
             print(f"    Arrives: {arr_time}")
+
+            # add flight information to database
+            cursor.execute("""
+            INSERT OR REPLACE INTO flights
+            (origin_code, destination_id, departure_date, return_date, price_usd, airline, segments)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (orig_code, dest_code, departure_date, return_date, amount, airline_name, len(segments)))
+
         print("-" * 45)
 
-def get_flight_data(user_location, geo_data_destination):
+def get_flight_data(user_location, geo_data_destination, connection):
     # user location info
     geo_data_user_location = geocode_city(user_location)
     if not geo_data_user_location:
@@ -278,16 +288,14 @@ def get_flight_data(user_location, geo_data_destination):
         print("Could not resolve valid flight origin or destination airport.")
         return None
 
-    departure_date = input("Enter a departure date [YYYY-MM-DD]:" )
+    departure_date = input("Enter a departure date [YYYY-MM-DD]: " )
     cabin_class = input("Enter a cabin class [economy, premium_economy, business, first]: ")
     num_adults = int(input("Enter the number of adults boarding: "))
     round_trip = input("Are you planning on returning? [y/n]: ")
     if round_trip == "y":
-        return_date = input("Enter a return date [YYYY-MM-DD]:")
-    elif round_trip == "n":
-        return_date = None
+        return_date = input("Enter a return date [YYYY-MM-DD]: ")
 
-    search_one_way_flights(user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, num_adults, return_date)
+    search_flights(user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, connection, num_adults, return_date)
 
 # adds forecast of the next 2 weeks to the database
 def get_weather_data(geo_data, connection):

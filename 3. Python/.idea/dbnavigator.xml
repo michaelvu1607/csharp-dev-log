@@ -40,7 +40,7 @@
     <connection id="2a69e479-5a8a-455f-9a8a-c63e78a3797f">
       <console name="Connection" type="STANDARD" schema="" session="Main" />
       <console name="Trips DB" type="STANDARD" schema="main" session="Main"><![CDATA[SELECT * FROM destinations;
---SELECT * FROM flights;
+SELECT * FROM flights;
 --SELECT * FROM accommodations;
 SELECT * FROM weather_forecasts;
 --SELECT * FROM climates;]]></console>
@@ -50,7 +50,9 @@ SELECT * FROM weather_forecasts;
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" object-ref="consoles/Trips DB" />
+    </open-files>
   </component>
   <component name="DBNavigator.Project.DatabasePrerequisiteManager">
     <prerequisites />
