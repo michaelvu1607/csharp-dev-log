@@ -1,6 +1,5 @@
 import sqlite3
 import requests
-from bs4 import BeautifulSoup
 from duffel_api import Duffel
 import os
 from dotenv import load_dotenv
@@ -9,8 +8,22 @@ import airportsdata
 
 load_dotenv()
 DUFFEL_TOKEN = os.getenv("DUFFEL_API_KEY")
-
 client = Duffel(access_token=DUFFEL_TOKEN)
+
+METRO_CITY_CODES = {
+    "new_york": "NYC",
+    "chicago": "CHI",
+    "london": "LON",
+    "paris": "PAR",
+    "tokyo": "TYO",
+    "washington": "WAS",
+    "san_francisco": "SFO",
+    "los_angeles": "LAX",
+    "toronto": "YTO",
+    "miami": "MIA",
+    "dallas": "DFW",
+    "seattle": "SEA"
+}
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     distance = math.hypot(lat1 - lat2, lon1 - lon2)
@@ -18,8 +31,53 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 def get_nearest_airport(userlat, userlon):
     airports = airportsdata.load('IATA')
-    closest = min(airports.values(), key=lambda coords: calculate_distance(userlat, userlon, coords['lat'], coords['lon']))
+
+    skip_keywords = [
+        # --- Private & General Aviation ---
+        "private", "executive", "exec", "airpark", "airstrip", "strip",
+        "fly-in", "ranch", "estate", "club", "flying club", "gliderport",
+        "ultralight", "skydive", "dropzone",
+        # --- Specialized & Non-Standard Facilities ---
+        "heliport", "helipad", "seaplane", "sea plane", "water aerodrome",
+        "water runway", "stolport",
+        # --- Municipal & Local Unscheduled Airfields ---
+        "municipal", "county", "township", "local", "reliever", "auxiliary",
+        "field",
+        # --- Medical & Emergency ---
+        "hospital", "medical", "clinic", "health", "life flight",
+        # --- Military & Government Air Bases ---
+        "military", "air force base", "afb", "raf", "naval", "nas",
+        "army", "aaf", "base", "garrison", "barracks", "joint reserve",
+        # --- Specific Known Non-Commercial Hubs / Outliers ---
+        "teterboro", "van nuys", "centennial"
+    ]
+
+    commercial_airports = [
+        airport for airport in airports.values()
+        if not any(keyword in airport["name"].lower() for keyword in skip_keywords)
+    ]
+
+    closest = min(commercial_airports, key=lambda coords: calculate_distance(userlat, userlon, coords['lat'], coords['lon']))
     return closest
+
+def resolve_location_to_iata(geo_data: dict) -> str:
+    # Returns an IATA Metro Code if the city is a known multi-airport region, otherwise calculates the nearest commercial airport code spatially.
+    clean_city = geo_data["city_name"].lower().replace(" ", "_")
+
+    # check if the city has a designated metro code
+    if clean_city in METRO_CITY_CODES:
+        metro_code = METRO_CITY_CODES[clean_city]
+        print(f"Using Metro Code '{metro_code}' for {geo_data['city_name']}")
+        return metro_code
+
+    # fall back to spatial calculation for smaller cities
+    nearest = get_nearest_airport(geo_data["latitude"], geo_data["longitude"])
+    if nearest:
+        iata_code = nearest.get("iata")
+        print(f"Nearest Airport for {geo_data['city_name']}: {nearest.get('name')} ({iata_code})")
+        return iata_code
+
+    return None
 
 # searches for location if not already in database
 def geocode_city(city_name: str):
@@ -184,41 +242,42 @@ def search_one_way_flights(origin_iata, destination_iata, departure_date, cabin_
         currency = offer.get("total_currency")
         airline_name = offer.get("owner", {}).get("name")
 
-        first_segment = offer["slices"][0]["segments"][-1]
-        dep_time = first_segment.get("departing_at")
-        arr_time = first_segment.get("arriving_at")
+        print(f"Option #{idx}: {airline_name} — Total: {amount} {currency} ({adults} adult(s))")
 
-        print(f"Option #{idx}: {airline_name}")
-        print(f"  Price: {amount} {currency} for {adults} adult passengers")
-        print(f"  Departs: {dep_time}")
-        print(f"  Arrives: {arr_time}")
-        print("-" * 40)
+        for s_idx, flight_slice in enumerate(offer["slices"], start=1):
+            segments = flight_slice["segments"]
+            dep_time = segments[0].get("departing_at")
+            arr_time = segments[-1].get("arriving_at")
+            num_layovers = len(segments) - 1
+            label = "Outbound" if s_idx == 1 else "Return"
+            layover_type = "Direct" if num_layovers == 0 else f"{num_layovers} layovers"
+
+            location = segments[0]["origin"]
+            destination = segments[-1]["destination"]
+
+            orig_code = location.get("iata_code") or location.get("iata") or "N/A"
+            dest_code = destination.get("iata_code") or destination.get("iata") or "N/A"
+
+            print(f"  [{label} - {layover_type}] {orig_code} ➔ {dest_code}")
+
+            print(f"    Departs: {dep_time}")
+            print(f"    Arrives: {arr_time}")
+        print("-" * 45)
 
 def get_flight_data(user_location, geo_data_destination):
     # user location info
     geo_data_user_location = geocode_city(user_location)
-    user_location_id = geo_data_user_location['destination_id']
-    print(f"Found {user_location_id}")
-
-    user_lat = geo_data_user_location['latitude']
-    user_lon = geo_data_user_location['longitude']
-
-    user_nearest_airport = get_nearest_airport(user_lat, user_lon)
-    if user_nearest_airport is None:
-        print(f"{user_location} not found")
+    if not geo_data_user_location:
+        print(f"Could not find user location: '{user_location}'")
         return None
-    print(f"User nearest airport: {user_nearest_airport}")
 
-    user_origin_code_iata = user_nearest_airport.get("iata")
+    user_origin_code_iata = resolve_location_to_iata(geo_data_user_location)
+    destination_origin_code_iata = resolve_location_to_iata(geo_data_destination)
 
-    # destination location info
-    destination_lat = geo_data_destination['latitude']
-    destination_lon = geo_data_destination['longitude']
+    if not user_origin_code_iata or not destination_origin_code_iata:
+        print("Could not resolve valid flight origin or destination airport.")
+        return None
 
-    destination_nearest_airport = get_nearest_airport(destination_lat, destination_lon)
-    print(f"Destination nearest airport: {destination_nearest_airport}")
-
-    destination_origin_code_iata = destination_nearest_airport.get("iata")
     departure_date = input("Enter a departure date [YYYY-MM-DD]:" )
     cabin_class = input("Enter a cabin class [economy, premium_economy, business, first]: ")
     num_adults = int(input("Enter the number of adults boarding: "))
@@ -227,6 +286,7 @@ def get_flight_data(user_location, geo_data_destination):
         return_date = input("Enter a return date [YYYY-MM-DD]:")
     elif round_trip == "n":
         return_date = None
+
     search_one_way_flights(user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, num_adults, return_date)
 
 # adds forecast of the next 2 weeks to the database
