@@ -22,11 +22,15 @@ CREATE TABLE flights (
     destination_id TEXT NOT NULL,
     origin_code TEXT NOT NULL,
     destination_code TEXT NOT NULL,
-    departure_date TEXT,
-    return_date TEXT,
+    outbound_departs TEXT,
+    outbound_arrives TEXT,
+    has_return BOOLEAN,
+    return_departs TEXT,
+    return_arrives TEXT,
     price_usd REAL NOT NULL,
     airline TEXT,
-    segments INTEGER NOT NULL DEFAULT 1,
+    outbound_layovers INTEGER NOT NULL DEFAULT 0,
+    return_layovers INTEGER,
     fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (destination_id) REFERENCES destinations (destination_id) ON DELETE CASCADE
 );

@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 import torch
 import torch.nn as nn
+from datetime import datetime, timedelta
 
 load_dotenv()
 DUFFEL_TOKEN = os.getenv("DUFFEL_API_KEY")
@@ -31,9 +32,11 @@ METRO_CITY_CODES = {
     "seattle": "SEA"
 }
 
+
 def calculate_distance(lat1, lon1, lat2, lon2):
     distance = math.hypot(lat1 - lat2, lon1 - lon2)
     return distance
+
 
 def get_nearest_airport(userlat, userlon):
     airports = airportsdata.load('IATA')
@@ -66,8 +69,9 @@ def get_nearest_airport(userlat, userlon):
     closest = min(commercial_airports, key=lambda coords: calculate_distance(userlat, userlon, coords['lat'], coords['lon']))
     return closest
 
+
 # Returns an IATA Metro Code if the city is a known multi-airport region, otherwise calculates the nearest commercial airport code spatially.
-def resolve_location_to_iata(geo_data: dict) -> str:
+def resolve_location_to_iata(geo_data):
     clean_city = geo_data["city_name"].lower().replace(" ", "_")
 
     # check if the city has a designated metro code
@@ -84,6 +88,7 @@ def resolve_location_to_iata(geo_data: dict) -> str:
         return iata_code
 
     return None
+
 
 # searches for location if not already in database
 def geocode_city(city_name: str):
@@ -123,9 +128,8 @@ def geocode_city(city_name: str):
         return None
 
 
-
 # prints top one way flight options
-def search_flights(destination_id, origin_iata, destination_iata, departure_date, cabin_class, connection, return_date, adults=1):
+def search_flights(origin_iata, destination_iata, departure_date, cabin_class, return_date, adults=1):
     print(f"Searching flights from {origin_iata} to {destination_iata} on {departure_date}")
 
     url = "https://api.duffel.com/air/offer_requests?return_offers=true"
@@ -145,17 +149,17 @@ def search_flights(destination_id, origin_iata, destination_iata, departure_date
 
     if return_date:
         slices.append({
-        "origin": destination_iata,
-        "destination": origin_iata,
-        "departure_date": return_date
-    })
+            "origin": destination_iata,
+            "destination": origin_iata,
+            "departure_date": return_date
+        })
 
     payload = {
         "data":
             {
-        "slices": slices,
-        "passengers": [{"type": "adult"} for _ in range(adults)],
-        "cabin_class": cabin_class
+                "slices": slices,
+                "passengers": [{"type": "adult"} for _ in range(adults)],
+                "cabin_class": cabin_class
             }
     }
 
@@ -163,55 +167,54 @@ def search_flights(destination_id, origin_iata, destination_iata, departure_date
     data = response.json()
 
     if response.status_code not in (200, 201):
-        print("Error from Duffel API:")
-        return
+        print("Error from Duffel API:", data)
+        return []
 
     offers = data.get("data", {}).get("offers", [])
-    print(f"Found {len(offers)} flight options\n")
+    parsed_offers = []
 
-    for idx, offer in enumerate(offers[:5], start=1):
-        flight_id = offer.get("id")
-        amount = offer.get("total_amount")
-        currency = offer.get("total_currency")
-        airline_name = offer.get("owner", {}).get("name")
+    for offer in offers[:5]:
+        slices = offer.get("slices", [])
 
-        print(f"Option #{idx}. {flight_id}: {airline_name} — Total: {amount} {currency} ({adults} adult(s))")
+        # Extract Outbound Slice (always index 0)
+        outbound_slice = slices[0] if len(slices) > 0 else {}
+        out_segments = outbound_slice.get("segments", [])
 
-        cursor = connection.cursor()
+        # Extract Return Slice (index 1 if round-trip, else None)
+        return_slice = slices[1] if len(slices) > 1 else None
+        ret_segments = return_slice.get("segments", []) if return_slice else []
 
-        for s_idx, flight_slice in enumerate(offer["slices"], start=1):
-            segments = flight_slice["segments"]
-            dep_time = segments[0].get("departing_at")
-            arr_time = segments[-1].get("arriving_at")
-            num_layovers = len(segments) - 1
-            label = "Outbound" if s_idx == 1 else "Return"
-            layover_type = "Direct" if num_layovers == 0 else f"{num_layovers} layovers"
+        # Helper to format layovers safely
+        out_layovers = "Direct" if len(out_segments) == 1 else f"{len(out_segments) - 1} layover(s)"
+        ret_layovers = ("Direct" if len(ret_segments) == 1 else f"{len(ret_segments) - 1} layover(s)") if return_slice else None
 
-            location = segments[0]["origin"]
-            destination = segments[-1]["destination"]
+        parsed_offers.append({
+            "flight_id": offer.get("id"),
+            "airline": offer.get("owner", {}).get("name"),
+            "price_usd": offer.get("total_amount"),
 
-            orig_code = location.get("iata_code") or location.get("iata") or "N/A"
-            dest_code = destination.get("iata_code") or destination.get("iata") or "N/A"
+            # Outbound Details
+            "outbound_origin": origin_iata,
+            "outbound_destination": destination_iata,
+            "outbound_departs": out_segments[0].get("departing_at") if out_segments else None,
+            "outbound_arrives": out_segments[-1].get("arriving_at") if out_segments else None,
+            "outbound_layovers": out_layovers,
 
-            print(f"  {label} - {layover_type} | {orig_code} ➔ {dest_code}")
+            # Return Details
+            "has_return": return_slice is not None,
+            "return_origin": destination_iata if return_slice else None,
+            "return_destination": origin_iata if return_slice else None,
+            "return_departs": ret_segments[0].get("departing_at") if ret_segments else None,
+            "return_arrives": ret_segments[-1].get("arriving_at") if ret_segments else None,
+            "return_layovers": ret_layovers,
+        })
 
-            print(f"    Departs: {dep_time}")
-            print(f"    Arrives: {arr_time}")
+    return parsed_offers
 
-            # add flight information to database
-            cursor.execute("""
-            INSERT OR REPLACE INTO flights
-            (flight_id, destination_id, origin_code, destination_code, departure_date, return_date, price_usd, airline, segments)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (flight_id, destination_id, orig_code, dest_code, departure_date, return_date, amount, airline_name, len(segments)))
-
-        print("-" * 45)
-
-def get_flight_data(user_location, geo_data_destination, flight_inputs, connection):
+def get_flight_data(geo_data_user_location, geo_data_destination, flight_inputs):
     # user location info
-    geo_data_user_location = geocode_city(user_location)
     if not geo_data_user_location:
-        print(f"Could not find user location: '{user_location}'")
+        print(f"Could not find user location: '{geo_data_user_location}'")
         return None
 
     user_origin_code_iata = resolve_location_to_iata(geo_data_user_location)
@@ -221,54 +224,13 @@ def get_flight_data(user_location, geo_data_destination, flight_inputs, connecti
         print("Could not resolve valid flight origin or destination airport.")
         return None
 
-    destination_id = geo_data_destination["destination_id"]
     departure_date, cabin_class, num_adults, round_trip, return_date = flight_inputs
-    search_flights(destination_id, user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, connection, return_date, num_adults)
+    parsed_offers = search_flights(user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, return_date, num_adults)
 
-# adds forecast of the next 2 weeks to the database
-def get_weather_data(geo_data, connection):
-    url = "https://api.open-meteo.com/v1/forecast"
-    params = {
-          "latitude": geo_data["latitude"],
-          "longitude": geo_data["longitude"],
-          "daily": "temperature_2m_max,precipitation_sum,weather_code",
-          "forecast_days": 14
-      }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()['daily']
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return
-    except requests.exceptions.RequestException as e:
-        print("Request failed:", e)
-        return
-
-    try:
-        destination_id = geo_data["destination_id"]
-        forecast_date = data['time']
-        temp_c = data['temperature_2m_max']
-        precipitation_sum = data['precipitation_sum']
-        weather_code = data["weather_code"]
-
-        cursor = connection.cursor()
-
-        # add forecast information to database
-        for i in range(len(forecast_date)):
-            cursor.execute("""
-            INSERT OR REPLACE INTO weather_forecasts
-            (destination_id, forecast_date, avg_temp_c, weather_code, precipitation_mm)
-            VALUES (?, ?, ?, ?, ?)
-            """, (destination_id, forecast_date[i], temp_c[i], weather_code[i], precipitation_sum[i]))
-
-    except sqlite3.Error as error:
-        print(f"An error occurred while setting up the database: {error}")
+    return parsed_offers
 
 
-
-def get_destination_data(city_name, user_location, flight_inputs):
+def get_destination_data(destination_city):
     connection = sqlite3.connect("trips.db", timeout=10)
 
     try:
@@ -276,45 +238,63 @@ def get_destination_data(city_name, user_location, flight_inputs):
 
         # searches through database to find location
         cursor.execute(
-            "SELECT * FROM destinations WHERE city_name LIKE ?", (f"%{city_name}%",)
+            "SELECT * FROM destinations WHERE city_name LIKE ?", (f"%{destination_city}%",)
         )
 
         match = cursor.fetchone()
 
-        # set variables equal to the match
+        # assign values to location information in the database instead of using geocode for better speed
         if match:
             (destination_id,
-            city_name,
-            country,
-            latitude,
-            longitude,
-            airport_code,
-            climate_zone,
-            avg_daily_cost_usd,
-            vibe_tags) = match
+             city_name,
+             country,
+             latitude,
+             longitude,
+             airport_code,
+             climate_zone,
+             avg_daily_cost_usd,
+             vibe_tags) = match
 
             print("Location found!")
 
-            # update data
-            geo_data = {
-                "destination_id": destination_id,
+            clean_city = city_name.lower().replace(" ", "_")
+            clean_country = country.lower().replace(" ", "_")
+
+            # update geo data
+            return {
+                "destination_id": f"{clean_city}_{clean_country}",
+                "city_name": city_name,
+                "country": country,
                 "latitude": latitude,
                 "longitude": longitude,
-                "city_name": city_name,
+
+                # Null for now
+                "airport_code": airport_code,
+                "climate_zone": climate_zone,
+                "avg_daily_cost_usd": avg_daily_cost_usd,
+                "vibe_tags": vibe_tags
             }
 
-            get_weather_data(geo_data, connection)
-            get_flight_data(user_location, geo_data, flight_inputs, connection)
-
-            connection.commit()
-            return match
-
         # location not found in database -> use geocode_city to search using API
-        geo_data = geocode_city(city_name)
-        print(f"'{city_name}' not in cache. Fetching location via Geocoding API")
+        geo_data = geocode_city(destination_city)
+        print(f"'{destination_city}' not in cache. Fetching location via Geocoding API")
         if not geo_data:
-            print(f"Could not find {city_name}")
+            print(f"Could not find {destination_city}")
             return None
+
+        print(f"Found {geo_data["city_name"].replace("_", " ").title()}, {geo_data["country"].replace("_", " ").title()}")
+
+        return geo_data
+
+    finally:
+        connection.close()
+
+
+def save_to_db(destination_data, flight_data):
+    connection = sqlite3.connect("trips.db", timeout=10)
+
+    try:
+        cursor = connection.cursor()
 
         # update database with new location
         cursor.execute("""
@@ -322,36 +302,47 @@ def get_destination_data(city_name, user_location, flight_inputs):
         (destination_id, city_name, country, latitude, longitude, airport_code, climate_zone, avg_daily_cost_usd, vibe_tags)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            geo_data["destination_id"],
-            geo_data["city_name"],
-            geo_data["country"],
-            geo_data["latitude"],
-            geo_data["longitude"],
-            geo_data["airport_code"],
-            geo_data["climate_zone"],
-            geo_data["avg_daily_cost_usd"],
-            geo_data["vibe_tags"]
+            destination_data["destination_id"],
+            destination_data["city_name"],
+            destination_data["country"],
+            destination_data["latitude"],
+            destination_data["longitude"],
+            destination_data["airport_code"],
+            destination_data["climate_zone"],
+            destination_data["avg_daily_cost_usd"],
+            destination_data["vibe_tags"]
         ))
 
-        print(f"Found {geo_data["city_name"].replace("_"," ").title()}, {geo_data["country"].replace("_"," ").title()}")
-
-        get_flight_data(user_location, geo_data, flight_inputs, connection)
-        get_weather_data(geo_data, connection)
+        # add flight information to database
+        cursor.execute("""
+        INSERT OR REPLACE INTO flights
+        (flight_id, destination_id, origin_code, destination_code, outbound_departs, outbound_arrives, has_return, return_departs, return_arrives, price_usd, airline, outbound_layovers, return_layovers)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (flight_data["flight_id"],
+              flight_data["destination_id"],
+              flight_data["outbound_origin"],
+              flight_data["outbound_destination"],
+              flight_data["outbound_departs"],
+              flight_data["outbound_arrives"],
+              flight_data["has_return"],
+              flight_data["return_departs"],
+              flight_data["return_arrives"],
+              flight_data["price_usd"],
+              flight_data["airline"],
+              flight_data["outbound_layovers"],
+              flight_data["return_layovers"]
+              ))
 
         connection.commit()
 
-        # return the new location now saved in the database
-        cursor.execute(
-            "SELECT * FROM destinations WHERE destination_id = ?",
-            (geo_data["destination_id"],)
-        )
-        return cursor.fetchone()
+    except sqlite3.Error as error:
+        print(f"An error occurred while setting up the database: {error}")
 
     finally:
         connection.close()
 
 
-def search():
+def main():
     while True:
         user_location = input("Enter your location: ")
         destination_city = input("Enter your destination: ")
@@ -367,14 +358,75 @@ def search():
         if round_trip == "y":
             return_date = input("Enter a return date [YYYY-MM-DD]: ")
 
-        flight_inputs = departure_date, cabin_class, num_adults, round_trip, return_date
+        flight_inputs = (departure_date, cabin_class, num_adults, round_trip, return_date)
 
-        get_destination_data(destination_city, user_location, flight_inputs)
+        geo_data_user_location = geocode_city(user_location)
+        if not geo_data_user_location:
+            print(f"Could not resolve user location: '{user_location}'")
+            continue
 
-        cont = input("Check another location? [y/n]: ")
-        if cont == "n":
-            break
+        geo_data_destination = get_destination_data(destination_city)
+        if not geo_data_destination:
+            continue
+
+        parsed_offers = get_flight_data(geo_data_user_location, geo_data_destination, flight_inputs)
+
+        if parsed_offers:
+            num_flight_options = 0
+            print("\n--- Available Flight Options ---")
+            for idx, offer in enumerate(parsed_offers, start=1):
+                print(f"Option #{idx}: {offer['airline']} — Total: ${offer['price_usd']}")
+                print(f"  Outbound ({offer['outbound_layovers']}): {offer['outbound_origin']} ➔ {offer['outbound_destination']}")
+                print(f"  Departs: {offer['outbound_departs']} | Arrives: {offer['outbound_arrives']}")
+                num_flight_options += 1
+
+                if offer["has_return"]:
+                    print(f"  Return ({offer['return_layovers']}): {offer['return_origin']} ➔ {offer['return_destination']}")
+                    print(f"  Departs: {offer['return_departs']} | Arrives: {offer['return_arrives']}")
+
+                print("-" * 45)
+
+            range_flight_options = f"1-{num_flight_options}" if num_flight_options > 1 else "1"
+            flight_option = int(input(f"Which would you like to save for later? [{range_flight_options} | 0]: "))
+
+            if 1 <= flight_option <= num_flight_options:
+                selected_offer = parsed_offers[flight_option - 1]
+
+                destination_data = {
+                    "destination_id": geo_data_destination["destination_id"],
+                    "city_name": geo_data_destination["city_name"],
+                    "country": geo_data_destination["country"],
+                    "latitude": geo_data_destination["latitude"],
+                    "longitude": geo_data_destination["longitude"],
+                    "airport_code": geo_data_destination["airport_code"],
+                    "climate_zone": geo_data_destination["climate_zone"],
+                    "avg_daily_cost_usd": geo_data_destination["avg_daily_cost_usd"],
+                    "vibe_tags": geo_data_destination["vibe_tags"]
+                }
+
+                flight_data = {
+                    "flight_id": selected_offer.get("flight_id"),
+                    "destination_id": geo_data_destination["destination_id"],
+                    "outbound_origin": selected_offer.get("outbound_origin"),
+                    "outbound_destination": selected_offer.get("outbound_destination"),
+                    "outbound_departs": selected_offer.get("outbound_departs"),
+                    "outbound_arrives": selected_offer.get("outbound_arrives"),
+                    "has_return": selected_offer.get("has_return"),
+                    "return_departs": selected_offer.get("return_departs"),
+                    "return_arrives": selected_offer.get("return_arrives"),
+                    "price_usd": selected_offer.get("price_usd"),
+                    "airline": selected_offer.get("airline"),
+                    "outbound_layovers": selected_offer.get("outbound_layovers"),
+                    "return_layovers": selected_offer.get("return_layovers")
+                }
+
+                save_to_db(destination_data, flight_data)
+
+            cont = input("Check another location? [y/n]: ")
+            if cont == "n":
+                break
+
 
 
 if __name__ == "__main__":
-    search()
+    main()
