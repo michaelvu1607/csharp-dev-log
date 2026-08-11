@@ -1,10 +1,16 @@
-import sqlite3
-import requests
-from duffel_api import Duffel
-import os
-from dotenv import load_dotenv
 import math
+import os
+import sqlite3
 import airportsdata
+import requests
+from dotenv import load_dotenv
+from duffel_api import Duffel
+from google import genai
+from google.genai import types
+import pandas as pd
+from pydantic import BaseModel, Field
+import torch
+import torch.nn as nn
 
 load_dotenv()
 DUFFEL_TOKEN = os.getenv("DUFFEL_API_KEY")
@@ -116,84 +122,10 @@ def geocode_city(city_name: str):
         print(f"Error reaching Geocoding API: {e}")
         return None
 
-def get_destination_data(city_name, user_location):
-    with sqlite3.connect('trips.db') as connection:
-        cursor = connection.cursor()
 
-        # searches through database to find location
-        cursor.execute(
-            "SELECT * FROM destinations WHERE city_name LIKE ?", (f"%{city_name}%",)
-        )
-
-        match = cursor.fetchone()
-
-        # set variables equal to the match
-        if match:
-            (destination_id,
-            city_name,
-            country,
-            latitude,
-            longitude,
-            airport_code,
-            climate_zone,
-            avg_daily_cost_usd,
-            vibe_tags) = match
-
-            print("Location found!")
-
-            # update data
-            geo_data = {
-                "destination_id": destination_id,
-                "latitude": latitude,
-                "longitude": longitude,
-                "city_name": city_name,
-            }
-
-            get_weather_data(geo_data, connection)
-
-            get_flight_data(user_location, geo_data, connection)
-            return match
-
-        # location not found in database -> use geocode_city to search using API
-        geo_data = geocode_city(city_name)
-
-        print(f"'{city_name}' not in cache. Fetching location via Geocoding API")
-        if not geo_data:
-            print(f"Could not find {city_name}")
-            return None
-
-        # update database with new location
-        cursor.execute("""
-        INSERT OR REPLACE INTO destinations
-        (destination_id, city_name, country, latitude, longitude, airport_code, climate_zone, avg_daily_cost_usd, vibe_tags)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            geo_data["destination_id"],
-            geo_data["city_name"],
-            geo_data["country"],
-            geo_data["latitude"],
-            geo_data["longitude"],
-            geo_data["airport_code"],
-            geo_data["climate_zone"],
-            geo_data["avg_daily_cost_usd"],
-            geo_data["vibe_tags"]
-        ))
-
-        print(f"Found {geo_data["city_name"].replace("_"," ").title()}, {geo_data["country"].replace("_"," ").title()}")
-
-        get_flight_data(user_location, geo_data, connection)
-        get_weather_data(geo_data, connection)
-
-        # return the new location now saved in the database
-        cursor.execute(
-            "SELECT * FROM destinations WHERE destination_id = ?",
-            (geo_data["destination_id"],)
-        )
-        new_match = cursor.fetchone()
-        return new_match
 
 # prints top one way flight options
-def search_flights(origin_iata, destination_iata, departure_date, cabin_class, connection, adults=1, return_date=None):
+def search_flights(destination_id, origin_iata, destination_iata, departure_date, cabin_class, connection, return_date, adults=1):
     print(f"Searching flights from {origin_iata} to {destination_iata} on {departure_date}")
 
     url = "https://api.duffel.com/air/offer_requests?return_offers=true"
@@ -238,11 +170,12 @@ def search_flights(origin_iata, destination_iata, departure_date, cabin_class, c
     print(f"Found {len(offers)} flight options\n")
 
     for idx, offer in enumerate(offers[:5], start=1):
+        flight_id = offer.get("id")
         amount = offer.get("total_amount")
         currency = offer.get("total_currency")
         airline_name = offer.get("owner", {}).get("name")
 
-        print(f"Option #{idx}: {airline_name} — Total: {amount} {currency} ({adults} adult(s))")
+        print(f"Option #{idx}. {flight_id}: {airline_name} — Total: {amount} {currency} ({adults} adult(s))")
 
         cursor = connection.cursor()
 
@@ -268,13 +201,13 @@ def search_flights(origin_iata, destination_iata, departure_date, cabin_class, c
             # add flight information to database
             cursor.execute("""
             INSERT OR REPLACE INTO flights
-            (origin_code, destination_id, departure_date, return_date, price_usd, airline, segments)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (orig_code, dest_code, departure_date, return_date, amount, airline_name, len(segments)))
+            (flight_id, destination_id, origin_code, destination_code, departure_date, return_date, price_usd, airline, segments)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (flight_id, destination_id, orig_code, dest_code, departure_date, return_date, amount, airline_name, len(segments)))
 
         print("-" * 45)
 
-def get_flight_data(user_location, geo_data_destination, connection):
+def get_flight_data(user_location, geo_data_destination, flight_inputs, connection):
     # user location info
     geo_data_user_location = geocode_city(user_location)
     if not geo_data_user_location:
@@ -288,14 +221,9 @@ def get_flight_data(user_location, geo_data_destination, connection):
         print("Could not resolve valid flight origin or destination airport.")
         return None
 
-    departure_date = input("Enter a departure date [YYYY-MM-DD]: " )
-    cabin_class = input("Enter a cabin class [economy, premium_economy, business, first]: ")
-    num_adults = int(input("Enter the number of adults boarding: "))
-    round_trip = input("Are you planning on returning? [y/n]: ")
-    if round_trip == "y":
-        return_date = input("Enter a return date [YYYY-MM-DD]: ")
-
-    search_flights(user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, connection, num_adults, return_date)
+    destination_id = geo_data_destination["destination_id"]
+    departure_date, cabin_class, num_adults, round_trip, return_date = flight_inputs
+    search_flights(destination_id, user_origin_code_iata, destination_origin_code_iata, departure_date, cabin_class, connection, return_date, num_adults)
 
 # adds forecast of the next 2 weeks to the database
 def get_weather_data(geo_data, connection):
@@ -338,13 +266,115 @@ def get_weather_data(geo_data, connection):
     except sqlite3.Error as error:
         print(f"An error occurred while setting up the database: {error}")
 
+
+
+def get_destination_data(city_name, user_location, flight_inputs):
+    connection = sqlite3.connect("trips.db", timeout=10)
+
+    try:
+        cursor = connection.cursor()
+
+        # searches through database to find location
+        cursor.execute(
+            "SELECT * FROM destinations WHERE city_name LIKE ?", (f"%{city_name}%",)
+        )
+
+        match = cursor.fetchone()
+
+        # set variables equal to the match
+        if match:
+            (destination_id,
+            city_name,
+            country,
+            latitude,
+            longitude,
+            airport_code,
+            climate_zone,
+            avg_daily_cost_usd,
+            vibe_tags) = match
+
+            print("Location found!")
+
+            # update data
+            geo_data = {
+                "destination_id": destination_id,
+                "latitude": latitude,
+                "longitude": longitude,
+                "city_name": city_name,
+            }
+
+            get_weather_data(geo_data, connection)
+            get_flight_data(user_location, geo_data, flight_inputs, connection)
+
+            connection.commit()
+            return match
+
+        # location not found in database -> use geocode_city to search using API
+        geo_data = geocode_city(city_name)
+        print(f"'{city_name}' not in cache. Fetching location via Geocoding API")
+        if not geo_data:
+            print(f"Could not find {city_name}")
+            return None
+
+        # update database with new location
+        cursor.execute("""
+        INSERT OR REPLACE INTO destinations
+        (destination_id, city_name, country, latitude, longitude, airport_code, climate_zone, avg_daily_cost_usd, vibe_tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            geo_data["destination_id"],
+            geo_data["city_name"],
+            geo_data["country"],
+            geo_data["latitude"],
+            geo_data["longitude"],
+            geo_data["airport_code"],
+            geo_data["climate_zone"],
+            geo_data["avg_daily_cost_usd"],
+            geo_data["vibe_tags"]
+        ))
+
+        print(f"Found {geo_data["city_name"].replace("_"," ").title()}, {geo_data["country"].replace("_"," ").title()}")
+
+        get_flight_data(user_location, geo_data, flight_inputs, connection)
+        get_weather_data(geo_data, connection)
+
+        connection.commit()
+
+        # return the new location now saved in the database
+        cursor.execute(
+            "SELECT * FROM destinations WHERE destination_id = ?",
+            (geo_data["destination_id"],)
+        )
+        return cursor.fetchone()
+
+    finally:
+        connection.close()
+
+
 def search():
     while True:
         user_location = input("Enter your location: ")
-
         destination_city = input("Enter your destination: ")
         if destination_city == "0":
             break
-        get_destination_data(destination_city, user_location)
+
+        departure_date = input("Enter a departure date [YYYY-MM-DD]: ")
+        cabin_class = input("Enter a cabin class [economy, premium_economy, business, first]: ")
+        num_adults = int(input("Enter the number of adults boarding: "))
+        round_trip = input("Are you planning on returning? [y/n]: ")
+
+        return_date = None
+        if round_trip == "y":
+            return_date = input("Enter a return date [YYYY-MM-DD]: ")
+
+        flight_inputs = departure_date, cabin_class, num_adults, round_trip, return_date
+
+        get_destination_data(destination_city, user_location, flight_inputs)
+
+        cont = input("Check another location? [y/n]: ")
+        if cont == "n":
+            break
+
+
 if __name__ == "__main__":
     search()

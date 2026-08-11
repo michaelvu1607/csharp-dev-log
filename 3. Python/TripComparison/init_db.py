@@ -4,8 +4,14 @@ def initialize_database(db_name="trips.db", schema_file="schema.sql"):
     try:
         # connect to the sqlite database
         connection = sqlite3.connect(db_name)
+
+        connection.isolation_level = None
+
         cursor = connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL;")
         print(f"Connected to database: {db_name}")
+
+        connection.isolation_level = ""
 
         # read the SQL commands from schema.sql
         with open(schema_file, "r") as f:

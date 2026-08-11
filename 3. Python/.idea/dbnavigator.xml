@@ -50,9 +50,7 @@ SELECT * FROM weather_forecasts;
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files>
-      <object connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" object-ref="consoles/Trips DB" />
-    </open-files>
+    <open-files />
   </component>
   <component name="DBNavigator.Project.DatabasePrerequisiteManager">
     <prerequisites />
@@ -116,7 +114,7 @@ SELECT * FROM weather_forecasts;
           <session-user value="" />
         </database>
         <properties>
-          <auto-commit value="false" />
+          <auto-commit value="true" />
         </properties>
         <ssh-settings>
           <active value="false" />
