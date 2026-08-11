@@ -5,13 +5,6 @@ import airportsdata
 import requests
 from dotenv import load_dotenv
 from duffel_api import Duffel
-from google import genai
-from google.genai import types
-import pandas as pd
-from pydantic import BaseModel, Field
-import torch
-import torch.nn as nn
-from datetime import datetime, timedelta
 
 load_dotenv()
 DUFFEL_TOKEN = os.getenv("DUFFEL_API_KEY")
