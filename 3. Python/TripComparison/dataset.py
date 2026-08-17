@@ -47,7 +47,7 @@ def clean_raw_data(df: pd.DataFrame, scaler: StandardScaler = None):
 
     for col in ["outbound_layovers", "return_layovers"]:
         extracted = df_feat[col].astype(str).str.extract(r"(\d+)")[0]
-        df_feat[col] = pd.to_numeric(df_feat[col], errors="coerce").fillna(0.0)
+        df_feat[col] = pd.to_numeric(extracted, errors="coerce").fillna(0.0)
 
     # convert lat & lon to cartesian coordinates -> add to df
     lat_rad = np.radians(df_feat["latitude"])

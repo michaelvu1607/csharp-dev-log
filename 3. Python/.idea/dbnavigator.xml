@@ -11,10 +11,6 @@
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
     <assistants>
-      <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
-        <tools />
-        <mcp-servers />
-      </assistant-state>
       <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="848902938C6D46D48B2C075C7D5CC2AF" availability="AVAILABLE" acknowledgement="ENGAGED" selected="true">
         <chats>
           <chat id="848902938C6D46D48B2C075C7D5CC2AF" title="" session-signature="" timestamp="1785822964696">
@@ -22,6 +18,10 @@
             <context mode="DEVELOPMENT" provider="" profile="" model="" action="" interactive="true" />
           </chat>
         </chats>
+        <tools />
+        <mcp-servers />
+      </assistant-state>
+      <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
         <tools />
         <mcp-servers />
       </assistant-state>
@@ -49,9 +49,7 @@ SELECT * FROM flights;
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files>
-      <object connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" object-ref="consoles/Trips DB" />
-    </open-files>
+    <open-files />
   </component>
   <component name="DBNavigator.Project.DatabasePrerequisiteManager">
     <prerequisites />
