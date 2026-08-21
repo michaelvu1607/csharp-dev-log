@@ -4,52 +4,130 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from sklearn.preprocessing import StandardScaler
+from enrich_destinations import enrich_missing_metadata
 
 
-def load_raw_trip_data(db_name: str = "trips.db") -> pd.DataFrame:
-    """Queries SQL database and joins destination and flight tables on destination_id."""
+def check_and_notify_missing_values(df: pd.DataFrame):
+    """Scans raw dataframe for missing values and prints explicit notifications to the user."""
+    missing_notifications = []
+
+    for idx, row in df.iterrows():
+        flight_id = row.get("flight_id", "Unknown")
+        dest_id = row.get("destination_id", "Unknown")
+
+        # Check avg_daily_cost_usd
+        if pd.isna(row.get("avg_daily_cost_usd")):
+            missing_notifications.append(
+                f"[Trip Alert] Flight '{flight_id}' (Destination: '{dest_id}') is missing 'avg_daily_cost_usd'. "
+                f"Reason: Destination metadata has not been enriched by Gemini API yet."
+            )
+
+        # Check return flight details
+        if row.get("has_return") and pd.isna(row.get("return_departs")):
+            missing_notifications.append(
+                f"[Trip Alert] Flight '{flight_id}' is marked as round-trip but missing 'return_departs'. "
+                f"Reason: Flight offer payload did not supply a return departure date."
+            )
+        elif not row.get("has_return") and pd.isna(row.get("return_departs")):
+            # Informational notice for one-way flights
+            missing_notifications.append(
+                f"[Trip Notice] Flight '{flight_id}' is missing 'return_departs'. "
+                f"Reason: Trip is a one-way flight, so no return schedule exists."
+            )
+
+        # Check pricing
+        if pd.isna(row.get("price_usd")):
+            missing_notifications.append(
+                f"[Trip Alert] Flight '{flight_id}' is missing 'price_usd'. "
+                f"Reason: Pricing data was omitted during provider response parsing."
+            )
+
+    if missing_notifications:
+        print("\n--- DATA VALIDATION NOTIFICATIONS ---")
+        for notice in missing_notifications:
+            print(notice)
+        print("-------------------------------------\n")
+
+
+def load_raw_trip_data(
+    db_name: str = "seed.db",
+    target_duration: int = None,
+    tolerance_days: int = 0,
+    target_country: str = None,
+    target_region: str = None
+) -> pd.DataFrame:
+    """Trigger enrichment on un-enriched destinations before querying raw trip data."""
+    enrich_result = enrich_missing_metadata(batch_size=50, db_name=db_name)
+    if enrich_result["failures"]:
+        for f in enrich_result["failures"]:
+            print(f"Enrichment Warning for {f['destination_id']}: Missing {f['missing_fields']}. Reason: {f['reason']}")
+
     connection = sqlite3.connect(db_name)
 
     query = """
-        SELECT 
-            f.flight_id,
-            f.destination_id,
-            f.price_usd,
-            f.outbound_departs,
-            f.outbound_arrives,
-            f.has_return,
-            f.return_departs,
-            f.return_arrives,
-            f.airline,
-            f.outbound_layovers,
-            f.return_layovers,
-            d.latitude,
-            d.longitude,
-            d.avg_daily_cost_usd
-        FROM flights f
-        INNER JOIN destinations d ON f.destination_id = d.destination_id
+            SELECT 
+                f.flight_id,
+                f.destination_id,
+                f.price_usd,
+                f.outbound_departs,
+                f.outbound_arrives,
+                f.has_return,
+                f.return_departs,
+                f.return_arrives,
+                f.airline,
+                f.outbound_layovers,
+                f.return_layovers,
+                d.latitude,
+                d.longitude,
+                d.avg_daily_cost_usd,
+                d.country,
+                (julianday(f.return_departs) - julianday(f.outbound_departs)) AS calc_duration_days
+            FROM flights f
+            INNER JOIN destinations d ON f.destination_id = d.destination_id
+            WHERE 1=1
         """
 
-    df = pd.read_sql_query(query, connection)
+    params = []
+
+    if target_duration is not None:
+        min_days = max(1, target_duration - tolerance_days)
+        max_days = target_duration + tolerance_days
+        query += " AND (calc_duration_days BETWEEN ? AND ? OR f.return_departs IS NULL)"
+        params.extend([min_days, max_days])
+
+    if target_country:
+        query += " AND LOWER(d.country) LIKE LOWER(?)"
+        params.append(f"%{target_country}%")
+
+    if target_region:
+        query += " AND LOWER(d.region) LIKE LOWER(?)"
+        params.append(f"%{target_region}%")
+
+    df = pd.read_sql_query(query, connection, params=params)
     connection.close()
+
+    check_and_notify_missing_values(df)
+
     return df
 
 
 def clean_raw_data(df: pd.DataFrame, scaler: StandardScaler = None):
-    """Cleans raw data, scales continuous features, and returns (df_feat, scaler)."""
+    """Cleans raw data, scales continuous features (including avg_daily_cost_usd), and returns features."""
     df_feat = df.copy()
 
-    # 1. clean core numerical features
-    essential_cols = ["latitude", "longitude", "price_usd"]
+    # Clean core continuous features
+    essential_cols = ["latitude", "longitude", "price_usd", "avg_daily_cost_usd"]
     for col in essential_cols:
         df_feat[col] = pd.to_numeric(df_feat[col], errors="coerce")
+
+    # Drop rows missing critical numeric ground values after user notification
     df_feat = df_feat.dropna(subset=essential_cols)
 
     for col in ["outbound_layovers", "return_layovers"]:
         extracted = df_feat[col].astype(str).str.extract(r"(\d+)")[0]
         df_feat[col] = pd.to_numeric(extracted, errors="coerce").fillna(0.0)
 
-    # convert lat & lon to cartesian coordinates -> add to df
+    # Convert lat & lon to cartesian coordinates
     lat_rad = np.radians(df_feat["latitude"])
     lon_rad = np.radians(df_feat["longitude"])
 
@@ -57,7 +135,7 @@ def clean_raw_data(df: pd.DataFrame, scaler: StandardScaler = None):
     df_feat["coord_y"] = np.cos(lat_rad) * np.sin(lon_rad)
     df_feat["coord_z"] = np.sin(lat_rad)
 
-    # 2. engineer numerical features
+    # Engineer time & duration features
     outbound_dt = pd.to_datetime(df_feat["outbound_departs"], errors="coerce")
     return_dt = pd.to_datetime(df_feat["return_departs"], errors="coerce")
 
@@ -66,19 +144,18 @@ def clean_raw_data(df: pd.DataFrame, scaler: StandardScaler = None):
     df_feat["dep_hour"] = outbound_dt.dt.hour.fillna(12.0).astype(float)
     df_feat["is_weekend_dep"] = outbound_dt.dt.dayofweek.isin([4, 5]).astype(float)
 
-    # 3. separate continuous and binary features
+    # Continuous features now include avg_daily_cost_usd from enrichment
     continuous_cols = [
         "coord_x",
         "coord_y",
         "coord_z",
         "price_usd",
+        "avg_daily_cost_usd",
         "outbound_layovers",
         "return_layovers",
-        "trip_duration_days",
         "dep_hour"
     ]
 
-    # 4. fit or apply scaler
     if scaler is None:
         scaler = StandardScaler()
         df_feat[continuous_cols] = scaler.fit_transform(df_feat[continuous_cols])
@@ -91,20 +168,33 @@ def clean_raw_data(df: pd.DataFrame, scaler: StandardScaler = None):
 
 
 class TripsDataset(Dataset):
-    """PyTorch Dataset wrapper storing features, tensor X, and the fitted StandardScaler."""
+    """PyTorch Dataset wrapper storing features, tensor X, and fitted StandardScaler."""
 
-    def __init__(self, db_path: str = "trips.db"):
+    def __init__(
+            self,
+            db_path: str = "trips.db",
+            target_duration: int = None,
+            tolerance_days: int = 0,
+            target_country: str = None,
+            target_region: str = None
+    ):
         self.db_path = db_path
-        self.df_raw = load_raw_trip_data(self.db_path)
+
+        self.df_raw = load_raw_trip_data(
+            db_name=self.db_path,
+            target_duration=target_duration,
+            tolerance_days=tolerance_days or 0,
+            target_country=target_country,
+            target_region=target_region
+        )
 
         if self.df_raw.empty:
-            raise ValueError(f"No records found in {db_path}. Please run fetch_data.py to save trips first!")
+            raise ValueError(
+                f"No matching trips found for country '{target_country}' with duration ~{target_duration} days.")
 
-        # clean, scale, and store the fit scaler instance
         self.df_features, self.scaler, self.continuous_cols = clean_raw_data(self.df_raw)
         self.feature_names = list(self.df_features.columns)
 
-        # convert to df to tensor
         features_np = self.df_features.to_numpy(dtype=np.float32)
         self.X = torch.from_numpy(features_np)
 
@@ -114,59 +204,29 @@ class TripsDataset(Dataset):
     def __getitem__(self, idx: int) -> torch.Tensor:
         return self.X[idx]
 
-    # converts scaled tensor rows back to original unscaled units
     def unscale_continuous_features(self, tensor_data: torch.Tensor) -> pd.DataFrame:
-        # pandas df and scikit-learn require a 2D matrix instead of a 1D vector
         if tensor_data.ndim == 1:
             tensor_data = tensor_data.unsqueeze(0)
 
-        # converts tensor back to df
         np_data = tensor_data.detach().cpu().numpy()
         df_scaled = pd.DataFrame(np_data, columns=self.feature_names)
 
-        # revert scaling on continuous columns using the saved scaler
         df_unscaled = df_scaled.copy()
         df_unscaled[self.continuous_cols] = self.scaler.inverse_transform(df_scaled[self.continuous_cols])
 
         return df_unscaled
 
-def score_and_rank_trips(dataset: TripsDataset, preference_weights: torch.Tensor) -> pd.DataFrame:
-    if preference_weights.ndim == 1:
-        preference_weights = preference_weights.unsqueeze(1)
 
-    scores = dataset.X @ preference_weights
+def score_and_rank_trips(dataset: TripsDataset, W: torch.Tensor) -> pd.DataFrame:
+    """Computes vector dot products using dataset.X and maps scores back to dataset.df_raw."""
+    # Compute tensor scores: (N x 9) @ (9 x 1) -> (N x 1)
+    scores = torch.matmul(dataset.X, W)
 
-    # insert new "match_score" column into "df_ranked"
-    df_ranked = dataset.df_raw.copy()
-    df_ranked["match_score"] = scores.squeeze().detach().cpu().numpy()
+    # Slice raw DataFrame to match the clean feature indices in dataset.X
+    df_valid = dataset.df_raw.loc[dataset.df_features.index].copy()
 
-    df_ranked = df_ranked.sort_values(by="match_score", ascending=False).reset_index(drop=True)
-    df_ranked.index += 1
+    # Assign scores and rank
+    df_valid["match_score"] = scores.squeeze().detach().cpu().numpy()
+    df_ranked = df_valid.sort_values(by="match_score", ascending=False)
 
     return df_ranked
-
-def main():
-    try:
-        dataset = TripsDataset("trips.db")
-        print("=== TripsDataset Loaded Successfully ===")
-        print(f"Number of samples (n):   {len(dataset)}")
-        print(f"Number of features (d):  {len(dataset.feature_names)}")
-        print(f"Feature Names:           {dataset.feature_names}\n")
-
-        W = torch.tensor(
-            [[0.0], [0.0], [0.0], [-0.8], [-0.4], [-0.4], [0.5], [0.1], [0.6]],
-            dtype=torch.float32,
-        )
-
-        # Calculate scores and rank trips
-        ranked_df = score_and_rank_trips(dataset, W)
-
-        print("=== TOP RANKED TRIPS ===")
-        display_cols = ["destination_id", "price_usd", "outbound_layovers", "airline", "match_score"]
-        print(ranked_df[display_cols].head())
-
-    except ValueError as err:
-        print(f"Error: {err}")
-
-if __name__ == "__main__":
-    main()

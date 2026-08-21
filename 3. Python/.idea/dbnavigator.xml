@@ -11,6 +11,14 @@
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
     <assistants>
+      <assistant-state connection-id="1058a482-867a-49a8-82f8-5ce7a852b6aa" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
+        <tools />
+        <mcp-servers />
+      </assistant-state>
+      <assistant-state connection-id="1058a482-867a-49a8-82f8-5ce7a852b6aa" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
+        <tools />
+        <mcp-servers />
+      </assistant-state>
       <assistant-state connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="848902938C6D46D48B2C075C7D5CC2AF" availability="AVAILABLE" acknowledgement="ENGAGED" selected="true">
         <chats>
           <chat id="848902938C6D46D48B2C075C7D5CC2AF" title="" session-signature="" timestamp="1785822964696">
@@ -44,6 +52,10 @@ SELECT * FROM flights;
 --SELECT * FROM accommodations;
 --SELECT * FROM climates;]]></console>
     </connection>
+    <connection id="1058a482-867a-49a8-82f8-5ce7a852b6aa">
+      <console name="Seed DB" type="STANDARD" schema="main" session="Main"><![CDATA[SELECT * FROM destinations;
+SELECT * FROM flights;]]></console>
+    </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">
     <last-used-providers />
@@ -56,6 +68,7 @@ SELECT * FROM flights;
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" />
+    <connection id="1058a482-867a-49a8-82f8-5ce7a852b6aa" />
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
     <filter-actions connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" dataset="main.accommodations" active-filter-id="" />
@@ -64,6 +77,7 @@ SELECT * FROM flights;
     <retain-sticky-names value="false" />
   </component>
   <component name="DBNavigator.Project.FileConnectionMappingManager">
+    <mapping file-url="file://$PROJECT_DIR$/TripComparison/seed_data.sql" connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" session-id="MAIN" current-schema="main" />
     <mapping file-url="file://$PROJECT_DIR$/TripComparison/schema.sql" connection-id="2a69e479-5a8a-455f-9a8a-c63e78a3797f" session-id="MAIN" current-schema="main" />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
@@ -114,6 +128,128 @@ SELECT * FROM flights;
         </database>
         <properties>
           <auto-commit value="true" />
+        </properties>
+        <ssh-settings>
+          <active value="false" />
+          <proxy-host value="" />
+          <proxy-port value="22" />
+          <proxy-user value="" />
+          <auth-type value="PASSWORD" />
+          <key-file value="" />
+        </ssh-settings>
+        <ssl-settings>
+          <active value="false" />
+          <certificate-authority-file value="" />
+          <client-certificate-file value="" />
+          <client-key-file value="" />
+        </ssl-settings>
+        <details>
+          <charset value="UTF-8" />
+          <session-management value="true" />
+          <ddl-file-binding value="true" />
+          <database-logging value="true" />
+          <connect-automatically value="true" />
+          <restore-workspace value="true" />
+          <restore-workspace-deep value="false" />
+          <environment-type value="default" />
+          <connectivity-timeout value="30" />
+          <idle-time-to-disconnect value="30" />
+          <idle-time-to-disconnect-pool value="5" />
+          <credential-expiry-time value="10" />
+          <max-connection-pool-size value="7" />
+          <alternative-statement-delimiter value="" />
+        </details>
+        <debugger>
+          <compile-dependencies value="true" />
+          <tcp-host-address value="" />
+          <tcp-port-from value="4000" />
+          <tcp-port-to value="4999" />
+          <jdwp-tunnel-type value="NONE" />
+          <debugger-type value="JDBC" />
+          <reverse-ssh-tunnel>
+            <host value="" />
+            <port value="22" />
+            <bind-host value="127.0.0.1" />
+            <bind-port value="0" />
+            <auth-type value="PASSWORD" />
+            <user value="" />
+            <key-file value="" />
+          </reverse-ssh-tunnel>
+        </debugger>
+        <object-filters hide-empty-schemas="false" hide-pseudo-columns="false" hide-audit-columns="false">
+          <object-filters />
+          <object-type-filter use-master-settings="true">
+            <object-type name="ROLE" enabled="true" />
+            <object-type name="PRIVILEGE" enabled="true" />
+            <object-type name="CHARSET" enabled="true" />
+            <object-type name="TABLE" enabled="true" />
+            <object-type name="VIEW" enabled="true" />
+            <object-type name="JSON_VIEW" enabled="true" />
+            <object-type name="MATERIALIZED_VIEW" enabled="true" />
+            <object-type name="NESTED_TABLE" enabled="true" />
+            <object-type name="COLUMN" enabled="true" />
+            <object-type name="INDEX" enabled="true" />
+            <object-type name="CONSTRAINT" enabled="true" />
+            <object-type name="DATASET_TRIGGER" enabled="true" />
+            <object-type name="DATABASE_TRIGGER" enabled="true" />
+            <object-type name="SYNONYM" enabled="true" />
+            <object-type name="SEQUENCE" enabled="true" />
+            <object-type name="PROCEDURE" enabled="true" />
+            <object-type name="FUNCTION" enabled="true" />
+            <object-type name="PACKAGE" enabled="true" />
+            <object-type name="TYPE" enabled="true" />
+            <object-type name="TYPE_ATTRIBUTE" enabled="true" />
+            <object-type name="ARGUMENT" enabled="true" />
+            <object-type name="JAVA_CLASS" enabled="true" />
+            <object-type name="JAVA_FIELD" enabled="true" />
+            <object-type name="JAVA_METHOD" enabled="true" />
+            <object-type name="JAVA_RESOURCE" enabled="true" />
+            <object-type name="DIMENSION" enabled="true" />
+            <object-type name="CLUSTER" enabled="true" />
+            <object-type name="DBLINK" enabled="true" />
+            <object-type name="CREDENTIAL" enabled="true" />
+            <object-type name="AI_PROFILE" enabled="true" />
+            <object-type name="AI_MODEL" enabled="true" />
+          </object-type-filter>
+        </object-filters>
+      </connection>
+      <connection source-id="" id="1058a482-867a-49a8-82f8-5ce7a852b6aa" active="true" signed="true">
+        <database>
+          <name value="Connection 1" />
+          <description value="" />
+          <database-type value="SQLITE" />
+          <config-type value="BASIC" />
+          <database-version value="3.53" />
+          <driver-source value="BUNDLED" />
+          <driver-library value="" />
+          <driver value="" />
+          <url-type value="FILE" />
+          <host value="" />
+          <port value="" />
+          <database value="" />
+          <tns-folder value="" />
+          <tns-profile value="" />
+          <server-type value="" />
+          <protocol value="" />
+          <url-parameters />
+          <files>
+            <file path="C:\Users\Mikec\Unity-Robotics-Hub\3. Python\TripComparison\seeddb.db" schema="main" />
+          </files>
+          <type value="NONE" />
+          <user value="" />
+          <token-type value="" />
+          <token-config-file value="" />
+          <token-profile value="" />
+          <adb-compartment-ocid value="" />
+          <adb-database-ocid value="" />
+          <azure-token-database-id-uri value="" />
+          <azure-token-tenant-id value="" />
+          <azure-token-client-id value="" />
+          <azure-token-client-certificate-file value="" />
+          <session-user value="" />
+        </database>
+        <properties>
+          <auto-commit value="false" />
         </properties>
         <ssh-settings>
           <active value="false" />

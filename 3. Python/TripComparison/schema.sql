@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS weather_forecasts;
 DROP TABLE IF EXISTS accommodations;
 DROP TABLE IF EXISTS flights;
 DROP TABLE IF EXISTS destinations;
@@ -10,6 +9,7 @@ CREATE TABLE destinations (
     destination_id TEXT PRIMARY KEY,
     city_name TEXT NOT NULL,
     country TEXT NOT NULL,
+    region TEXT,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     airport_code TEXT DEFAULT NULL,
