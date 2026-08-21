@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import random
 import pandas as pd
@@ -126,5 +127,45 @@ def load_and_seed_database(num_flights=10000):
         f"Successfully populated '{DB_NAME}' with {len(destinations)} destinations and {num_flights} flights (metadata left NULL).")
 
 
+def enrich_real_destinations_with_mock_metadata(db_name="seed.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    # Fetch real destinations that are missing LLM-derived fields
+    cursor.execute("""
+        SELECT destination_id, city_name, country 
+        FROM destinations 
+        WHERE climate_zone IS NULL OR avg_daily_cost_usd IS NULL OR vibe_tags IS NULL
+    """)
+    real_rows = cursor.fetchall()
+
+    if not real_rows:
+        print("[Info] No real destinations require enrichment.")
+        conn.close()
+        return
+
+    climates = ["Tropical", "Temperate", "Arid", "Continental", "Polar"]
+    vibes_pool = ["adventure", "relaxing", "nightlife", "historic", "nature", "budget-friendly", "luxury"]
+
+    updates = []
+    for dest_id, city, country in real_rows:
+        # Keep the real city/coordinates, mock only the LLM parameters instantly
+        climate = random.choice(climates)
+        cost = round(random.uniform(40.0, 350.0), 2)
+        vibes = json.dumps(random.sample(vibes_pool, k=3))
+
+        updates.append((climate, cost, vibes, dest_id))
+
+    cursor.executemany("""
+        UPDATE destinations 
+        SET climate_zone = ?, avg_daily_cost_usd = ?, vibe_tags = ?
+        WHERE destination_id = ?
+    """, updates)
+
+    conn.commit()
+    conn.close()
+    print(f"[Success] Enriched {len(updates)} real destinations.")
+
 if __name__ == "__main__":
-    load_and_seed_database(10000)
+    load_and_seed_database()
+    enrich_real_destinations_with_mock_metadata()

@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
